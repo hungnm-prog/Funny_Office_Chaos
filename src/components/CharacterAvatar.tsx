@@ -24,7 +24,7 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
     hairStyle = 'sidepart7_3',
     skinColor = '#fed7aa',
     outfitColor = '#2563eb',
-    outfitStyle = 'casual',
+    outfitStyle = 'casual_tee',
     eyeColor = '#0f172a',
     accessory = 'none',
   } = appearance;
@@ -33,7 +33,7 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
   const isFacingUp = direction === 'up';
   const isFemale = gender === 'female';
 
-  // Normalize legacy style keys to the new exact requested male hairstyles
+  // Normalize male hairstyles
   const getNormalizedMaleStyle = (style: string) => {
     switch (style) {
       case 'undercut':
@@ -57,7 +57,7 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
 
   const currentStyleKey = !isFemale ? getNormalizedMaleStyle(hairStyle) : hairStyle;
 
-  // 1. LAYER 1: BACK HAIR (behind head & torso, completely encloses skull)
+  // 1. LAYER 1: BACK HAIR
   const renderBackHair = () => {
     if (!isFemale) {
       switch (currentStyleKey) {
@@ -90,7 +90,6 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
       }
     }
 
-    // Female styles back base
     switch (currentStyleKey) {
       case 'female_wavy':
         return (
@@ -146,70 +145,50 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
     }
   };
 
-  // 2. LAYER 3: FRONT HAIR (Covers crown & forehead but strictly stops at y <= 20 to NOT cover the eyes at y=25.5)
+  // 2. LAYER 3: FRONT HAIR
   const renderFrontHair = () => {
-    // A. 5 MALE HAIRSTYLES: Strictly stops above the eyes (y <= 20)
     if (!isFemale) {
       switch (currentStyleKey) {
-        // STYLE 1: SIDEPART 7/3 (Rẽ ngôi 7/3 lãng tử, mái dấu phẩy trên trán, không che mắt)
         case 'sidepart7_3':
         default:
           return (
             <g fill={hairColor}>
-              {/* Full dome enclosing skull from y=5 down to temples */}
               <path d="M 14 24 C 13 12 21 5.5 32 5.5 C 43 5.5 51 12 50 24 C 47 20 44 19 42 22 C 39 16 34 15 30 15 C 25 15 20 18 18 23 C 17 20 15 20 14 24 Z" />
-              {/* 7-portion sweeping comma bang (Stops at y=19.5, well above eyes at y=25.5) */}
               <path d="M 27 15 Q 37 13.5 46 17.5 C 47 20 43 20.5 39 20 C 33 19 28 17.5 27 15 Z" />
-              {/* 3-portion side combed back */}
               <path d="M 26 15 Q 20 16 16 19.5 C 18 21 22 18.5 26 15 Z" />
-              {/* Sideburns on far sides outside the eyes */}
               <rect x="15" y="22" width="3.5" height="7" rx="1.5" />
               <rect x="45.5" y="22" width="3.5" height="7" rx="1.5" />
-              {/* Glossy shine */}
               <ellipse cx="34" cy="10" rx="8" ry="1.8" fill="#ffffff" opacity="0.28" />
             </g>
           );
-
-        // STYLE 2: UNDERCUT (Hai bên cạo fade, đỉnh vuốt phồng cao cấp đổ về sau, trán thoáng sáng rõ mắt)
         case 'undercut':
           return (
             <g fill={hairColor}>
-              {/* Pompadour top rising to y=4.5, sweeps back */}
               <path d="M 15 22 C 14 11 22 4.5 32 4.5 C 42 4.5 50 11 49 22 C 47 18 44 17 41 19 C 38 14 35 14 32 16 C 29 14 26 14 23 19 C 20 17 17 18 15 22 Z" />
               <path d="M 21 15 Q 32 11 43 15 L 41 18 Q 32 14 23 18 Z" fill="rgba(255,255,255,0.22)" />
-              {/* Clean hairline line well above eyebrows */}
               <rect x="21" y="16.5" width="22" height="3" rx="1" fill={hairColor} />
-              {/* High fade sideburns outside eyes */}
               <rect x="15.8" y="22" width="2.8" height="6.5" rx="1" opacity="0.85" />
               <rect x="45.4" y="22" width="2.8" height="6.5" rx="1" opacity="0.85" />
               <ellipse cx="32" cy="9" rx="8.5" ry="2" fill="#ffffff" opacity="0.25" />
             </g>
           );
-
-        // STYLE 3: LAYER (Tóc tỉa layer xếp lớp ngang trán, tỉa so le trên chân mày, KHÔNG chạm mắt)
         case 'layer':
           return (
             <g fill={hairColor}>
-              {/* Crown dome */}
               <path d="M 13.5 24 C 12.5 12 21 5 32 5 C 43 5 51.5 12 50.5 24 C 48 19 45 18 43 21 C 40 16 36 15 32 18 C 28 15 24 16 21 21 C 19 18 16 19 13.5 24 Z" />
-              {/* Layer fringe tips stop strictly at y=20 (5.5px above eye center y=25.5) */}
               <polygon points="17,17 21,20.5 24,17" />
               <polygon points="23,17 27,20.5 30,17" />
               <polygon points="29,17 33,20.8 36,17" />
               <polygon points="35,17 39,20.5 42,17" />
               <polygon points="41,17 44.5,20 47,17" />
-              {/* Sideburns */}
               <rect x="15" y="23" width="3.2" height="6.5" rx="1.2" />
               <rect x="45.8" y="23" width="3.2" height="6.5" rx="1.2" />
               <ellipse cx="32" cy="10" rx="9" ry="2.2" fill="#ffffff" opacity="0.25" />
             </g>
           );
-
-        // STYLE 4: SHORT QUIFF (Vuốt dựng phồng hướng lên trời, trán mở sáng ngời, mắt cực rõ)
         case 'short_quiff':
           return (
             <g fill={hairColor}>
-              {/* Upward brush sweep rising to y=3.8 */}
               <path d="M 14.5 23 C 13.5 13 21 3.8 32 3.8 C 41 3.8 48 9 49.5 23 C 47 19 44 18 42 20 C 39 14 35 12 32 12 C 29 12 25 14 22 20 C 20 18 17 19 14.5 23 Z" />
               <polygon points="28,13 32,7 36,13" />
               <path d="M 25 14 Q 32 7.5 39 14 L 37 16 Q 32 10 27 16 Z" fill="rgba(255,255,255,0.22)" />
@@ -218,13 +197,10 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
               <ellipse cx="32" cy="9.5" rx="7.5" ry="1.8" fill="#ffffff" opacity="0.25" />
             </g>
           );
-
-        // STYLE 5: BUZZ CUT (Đầu đinh cua ôm sát sọ, chân tóc vuông vắn ở y=17.5, mắt sáng 100%)
         case 'buzz_cut':
           return (
             <g fill={hairColor}>
               <path d="M 16.5 24 C 16 15 22 9.5 32 9.5 C 42 9.5 48 15 47.5 24 L 46 24 C 45 19 44 17.5 41 17.5 L 23 17.5 C 20 17.5 19 19 18 24 Z" />
-              {/* Front hairline strictly at y=17.5 */}
               <rect x="20.5" y="16.5" width="23" height="3" rx="1" />
               <polygon points="17.5,21 21,17 21,22" />
               <polygon points="46.5,21 43,17 43,22" />
@@ -236,17 +212,14 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
       }
     }
 
-    // B. FEMALE HAIRSTYLES: Bangs strictly stop at y <= 20.5, sides stay outside x in [21, 43]
     switch (currentStyleKey) {
       case 'female_wavy':
         return (
           <g fill={hairColor}>
             <path d="M 13 23 C 13 12 21 6 32 6 C 43 6 51 12 51 23 C 47 19 44 19 43 22 C 41 17 37 16 32 19 C 27 16 23 17 21 22 C 20 19 17 19 13 23 Z" />
-            {/* Soft airy bangs ending safely above eyes at y=19.5 */}
             <rect x="27" y="16" width="2" height="3.5" rx="1" opacity="0.8" />
             <rect x="31" y="16" width="2" height="4" rx="1" opacity="0.8" />
             <rect x="35" y="16" width="2" height="3.5" rx="1" opacity="0.8" />
-            {/* Wavy locks on the sides outside the eye frame */}
             <path d="M 14 22 C 13 32 16 40 14 48 C 17 48 19 40 19 32 C 19 25 17 22 14 22 Z" />
             <path d="M 50 22 C 51 32 48 40 50 48 C 47 48 45 40 45 32 C 45 25 47 22 50 22 Z" />
             <ellipse cx="32" cy="10" rx="9" ry="2" fill="#ffffff" opacity="0.3" />
@@ -257,9 +230,7 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
         return (
           <g fill={hairColor}>
             <path d="M 14 23 C 13 12 21 6 32 6 C 43 6 51 12 50 23 C 48 19 44 19 43 22 C 40 18 24 18 21 22 C 20 19 16 19 14 23 Z" />
-            {/* Straight fringe strictly stops at y=20 */}
             <path d="M 21 16 Q 32 18 43 16 L 43 19.5 Q 32 21 21 19.5 Z" />
-            {/* Outer cheek strands */}
             <rect x="14" y="22" width="4.5" height="24" rx="2" />
             <rect x="45.5" y="22" width="4.5" height="24" rx="2" />
             <ellipse cx="32" cy="10" rx="10" ry="2" fill="#ffffff" opacity="0.3" />
@@ -314,37 +285,53 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
     }
   };
 
-  // 3. LAYER 4: ACCESSORIES (Head-covering accessories engineered to strictly stop ABOVE the eyes at y <= 19.5)
+  // 3. LAYER 4: ACCESSORIES
+  // REQUIREMENT: Băng rôn (Headband) hiển thị CHÍNH XÁC cùng kích cỡ đầu nhân vật, không lộ ra ngoài và không bị lọt vào trong!
   const renderAccessory = () => {
     switch (accessory) {
-      // MŨ LƯỠI TRAI (Snapback / Baseball Cap): Covers the head dome, visor sits at y=17 to y=19.5, leaving eyes completely clear!
+      // BĂNG RÔN / BĂNG ĐÔ THỂ THAO: Clipped perfectly to circle cx=32 cy=25 r=14
+      case 'headband':
+        return (
+          <g clipPath="url(#head-contour-clip)">
+            {/* The headband spans the forehead across y=16.5 to y=20.5, curving naturally */}
+            <path
+              d="M 16 16.5 Q 32 18.5 48 16.5 L 48 20.8 Q 32 22.8 16 20.8 Z"
+              fill="#ef4444"
+              stroke="#b91c1c"
+              strokeWidth="0.5"
+            />
+            {/* Sport contrast stripe */}
+            <path d="M 16 18.6 Q 32 20.6 48 18.6" stroke="#ffffff" strokeWidth="1.2" fill="none" />
+            {/* Center Sport Logo Badge */}
+            <rect x="29.5" y="17.2" width="5" height="2.6" rx="0.6" fill="#ffffff" />
+            <circle cx="32" cy="18.5" r="0.9" fill="#ef4444" />
+          </g>
+        );
+
+      // MŨ LƯỠI TRAI (Snapback / Baseball Cap)
       case 'cap':
         return (
           <g>
-            {/* Cap Dome enclosing the entire crown from y=4 to y=18 */}
             <path
               d="M 13 20 C 12 10 20 3.5 32 3.5 C 44 3.5 52 10 51 20 Z"
               fill={outfitColor}
               stroke="#0f172a"
               strokeWidth="0.8"
             />
-            {/* Top Button */}
             <circle cx="32" cy="3.5" r="1.8" fill="#f8fafc" />
             <path d="M 32 3.5 L 32 18" stroke="rgba(255,255,255,0.25)" strokeWidth="0.8" />
-            {/* Curved Visor / Brim: Sits gracefully from y=16.5 to y=19.5, well above eyes at y=25.5 */}
             <path
               d="M 12 18.5 C 12 17.5 20 15.5 32 15.5 C 44 15.5 52 17.5 52 18.5 C 53.5 19.5 47 20.8 32 20.8 C 17 20.8 10.5 19.5 12 18.5 Z"
               fill="#0f172a"
               stroke="rgba(255,255,255,0.2)"
               strokeWidth="0.6"
             />
-            {/* Cap Logo */}
             <circle cx="32" cy="11" r="2.2" fill="#f8fafc" />
             <rect x="31" y="10" width="2" height="2" fill="#3b82f6" />
           </g>
         );
 
-      // MŨ LEN BEANIE: Folded cuff stops safely at y=19.5
+      // MŨ LEN BEANIE
       case 'beanie':
         return (
           <g>
@@ -353,7 +340,6 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
               fill={outfitColor}
             />
             <circle cx="32" cy="1.8" r="3" fill="#f8fafc" />
-            {/* Cuff across upper forehead (y=15.5 to y=19.5) */}
             <rect
               x="12"
               y="15.5"
@@ -372,7 +358,7 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
           </g>
         );
 
-      // TAI NGHE CHỤP TAI GAMING (Studio Headset): Thick band over crown, ear cups wrap ears, eyes 100% open
+      // TAI NGHE CHỤP TAI
       case 'headphones':
         return (
           <g>
@@ -389,37 +375,20 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
               strokeWidth="2"
               fill="none"
             />
-            {/* Left Ear Cushion (Outside face at x=11.5 - 17) */}
             <rect x="11.5" y="20.5" width="5.5" height="11" rx="2.5" fill="#0f172a" stroke={outfitColor} strokeWidth="1" />
             <circle cx="14.2" cy="26" r="1.5" fill="#38bdf8" />
-            {/* Right Ear Cushion (Outside face at x=47 - 52.5) */}
             <rect x="47" y="20.5" width="5.5" height="11" rx="2.5" fill="#0f172a" stroke={outfitColor} strokeWidth="1" />
             <circle cx="49.8" cy="26" r="1.5" fill="#38bdf8" />
           </g>
         );
 
-      // BĂNG ĐÔ THỂ THAO: Wraps upper forehead from y=15.5 to y=19
-      case 'headband':
-        return (
-          <g>
-            <path
-              d="M 13 19.5 Q 32 21.5 51 19.5 L 51 16 Q 32 18 13 16 Z"
-              fill="#ef4444"
-              stroke="#991b1b"
-              strokeWidth="0.8"
-            />
-            <path d="M 13 17.8 Q 32 19.8 51 17.8" stroke="#ffffff" strokeWidth="1.2" fill="none" />
-          </g>
-        );
-
-      // KÍNH MẮT TRÍ THỨC: Thin crisp frames with ultra-transparent lenses so eyes shine 100% through
+      // KÍNH MẮT TRÍ THỨC
       case 'glasses':
         return (
           <g stroke="#0f172a" strokeWidth="1.3" fill="none">
             <rect x="23" y="22.5" width="7.5" height="6.5" rx="2" fill="rgba(255,255,255,0.08)" />
             <rect x="33.5" y="22.5" width="7.5" height="6.5" rx="2" fill="rgba(255,255,255,0.08)" />
             <line x1="30.5" y1="25" x2="33.5" y2="25" />
-            {/* Glasses temple arms going back */}
             <line x1="23" y1="24.5" x2="18" y2="24" />
             <line x1="41" y1="24.5" x2="46" y2="24" />
           </g>
@@ -441,7 +410,242 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
     }
   };
 
-  // EYES & SMILE (Located at y=25.5, radiant, completely unblocked)
+  // 4. DIVERSE OUTFITS: MALE (Casual to Sports) & FEMALE (Sports to Fashion)
+  // REQUIREMENT: Bộ đồ KHÔNG được che tay của nhân vật (Thân áo nằm trong x=21-43, không lấn ra vùng tay x=19.2 và x=44.8)
+  const renderOutfitTorso = () => {
+    // A. MALE OUTFITS
+    if (!isFemale) {
+      switch (outfitStyle) {
+        // THỂ THAO 1: GYM / FITNESS PRO (Áo thun thể thao ôm sát, tay ngắn lộ bắp tay)
+        case 'sport_gym':
+          return (
+            <g>
+              <path d="M 21 38 L 43 38 L 44 52 L 20 52 Z" fill={outfitColor} />
+              {/* Gym V-neck */}
+              <polygon points="32,44 28,38 36,38" fill={skinColor} />
+              {/* Sporty athletic side stripes */}
+              <line x1="23" y1="40" x2="22" y2="52" stroke="#ffffff" strokeWidth="1.2" />
+              <line x1="41" y1="40" x2="42" y2="52" stroke="#ffffff" strokeWidth="1.2" />
+              {/* Chest logo */}
+              <circle cx="32" cy="46" r="1.8" fill="#ffffff" />
+            </g>
+          );
+
+        // THỂ THAO 2: BASKETBALL JERSEY #07 (Áo sát nách thể thao, lộ trọn cánh tay)
+        case 'sport_jersey':
+          return (
+            <g>
+              {/* Sleeveless tank top */}
+              <path d="M 23 38 L 41 38 L 43 52 L 21 52 Z" fill={outfitColor} />
+              {/* Deep scoop neck */}
+              <path d="M 27 38 Q 32 44 37 38" fill={skinColor} />
+              {/* Number 07 on chest */}
+              <text x="32" y="49" fontSize="6" fontWeight="900" fill="#ffffff" textAnchor="middle" fontFamily="sans-serif">
+                07
+              </text>
+              {/* Contrast armhole trim */}
+              <line x1="23" y1="38" x2="21" y2="52" stroke="#ffffff" strokeWidth="1" />
+              <line x1="41" y1="38" x2="43" y2="52" stroke="#ffffff" strokeWidth="1" />
+            </g>
+          );
+
+        // THOẢI MÁI 1: ÁO PHÔNG STREETWEAR OVERSIZE
+        case 'casual_tee':
+        case 'casual':
+          return (
+            <g>
+              <path d="M 21 38 L 43 38 L 44 52 L 20 52 Z" fill={outfitColor} />
+              <path d="M 27 38 Q 32 42 37 38" stroke="#ffffff" strokeWidth="1.2" fill={skinColor} />
+              {/* Streetwear graphic line */}
+              <rect x="27" y="44" width="10" height="3.5" rx="1" fill="rgba(255,255,255,0.2)" />
+            </g>
+          );
+
+        // THOẢI MÁI 2: ÁO POLO NĂNG ĐỘNG
+        case 'casual_polo':
+        case 'shirt':
+          return (
+            <g>
+              <path d="M 21 38 L 43 38 L 44 52 L 20 52 Z" fill={outfitColor} />
+              {/* White collar */}
+              <polygon points="32,43 26,38 38,38" fill="#ffffff" />
+              <line x1="32" y1="43" x2="32" y2="48" stroke="#0f172a" strokeWidth="0.8" />
+              <circle cx="32" cy="45" r="0.7" fill="#0f172a" />
+            </g>
+          );
+
+        // THOẢI MÁI 3: HOODIE TRẺ TRUNG
+        case 'hoodie':
+          return (
+            <g>
+              <path d="M 20 38 L 44 38 L 44 52.5 L 20 52.5 Z" fill={outfitColor} rx="2" />
+              {/* Kangaroo pocket */}
+              <rect x="25" y="46" width="14" height="5.5" rx="1.5" fill="rgba(0,0,0,0.15)" />
+              <line x1="29" y1="39" x2="29" y2="43" stroke="#ffffff" strokeWidth="1" />
+              <line x1="35" y1="39" x2="35" y2="43" stroke="#ffffff" strokeWidth="1" />
+            </g>
+          );
+
+        // CÔNG SỞ: VEST NAM LỊCH LÃM
+        case 'suit':
+        default:
+          return (
+            <g>
+              <path d="M 20 38 L 44 38 L 45 52 L 19 52 Z" fill={outfitColor} />
+              <polygon points="32,45 28,38 36,38" fill="#ffffff" />
+              <polygon points="32,40 33,48 32,50 31,48" fill="#dc2626" />
+            </g>
+          );
+      }
+    }
+
+    // B. FEMALE OUTFITS (Sports & Fashion)
+    switch (outfitStyle) {
+      // THỂ THAO 1: ACTIVEWEAR GYM & YOGA (Áo thể thao crop-top thể thao, tôn dáng, lộ eo và tay)
+      case 'female_sport_active':
+        return (
+          <g>
+            {/* Sporty crop top */}
+            <path d="M 23 38 L 41 38 L 42 46 L 22 46 Z" fill={outfitColor} />
+            <path d="M 26 38 Q 32 42 38 38" fill={skinColor} />
+            {/* Bare midriff / waist */}
+            <rect x="23" y="46" width="18" height="3" fill={skinColor} />
+            {/* High-waist yoga leggings top */}
+            <path d="M 22 49 L 42 49 L 43 53 L 21 53 Z" fill="#0f172a" />
+            {/* Sport stripe */}
+            <line x1="24" y1="41" x2="40" y2="41" stroke="#ffffff" strokeWidth="1" />
+          </g>
+        );
+
+      // THỂ THAO 2: TENNIS FIT (Áo polo thể thao & chân váy tennis xếp ly)
+      case 'female_sport_tennis':
+        return (
+          <g>
+            {/* Top polo */}
+            <path d="M 23 38 L 41 38 L 42 45 L 22 45 Z" fill={outfitColor} />
+            <polygon points="32,42 27,38 37,38" fill="#ffffff" />
+            {/* Tennis Pleated Skirt (Width strictly 22-42, leaving hands at x=19.2 and 44.8 clear) */}
+            <path d="M 22 45 L 42 45 L 43 53 L 21 53 Z" fill="#ffffff" stroke="#e2e8f0" strokeWidth="0.5" />
+            {/* Pleats */}
+            <line x1="26" y1="45" x2="25" y2="53" stroke="#cbd5e1" strokeWidth="0.8" />
+            <line x1="32" y1="45" x2="32" y2="53" stroke="#cbd5e1" strokeWidth="0.8" />
+            <line x1="38" y1="45" x2="39" y2="53" stroke="#cbd5e1" strokeWidth="0.8" />
+          </g>
+        );
+
+      // FASHION 1: VÁY RUNWAY DẠ TIỆC (Chiết eo, khóa vàng, xòe thời trang không chạm tay)
+      case 'female_fashion_dress':
+      case 'dress':
+        return (
+          <g>
+            {/* Bodice */}
+            <path d="M 23 38 L 41 38 L 41.5 45 L 22.5 45 Z" fill={outfitColor} />
+            <path d="M 27 38 Q 32 41 37 38" stroke="#ffffff" strokeWidth="1" fill={skinColor} />
+            {/* Gold belted waist */}
+            <rect x="22.5" y="44" width="19" height="2.5" fill="#facc15" />
+            <rect x="30.5" y="43.5" width="3" height="3.5" fill="#ca8a04" rx="0.5" />
+            {/* Flare Skirt (width capped at x=21.5 to 42.5 so hands at 19.2 & 44.8 are totally unblocked) */}
+            <path d="M 22.5 46.5 L 41.5 46.5 L 42.5 53.5 L 21.5 53.5 Z" fill={outfitColor} />
+          </g>
+        );
+
+      // FASHION 2: BLAZER PARISIAN SÀNH ĐIỆU (Blazer suông sành điệu, trong phối lụa)
+      case 'female_fashion_blazer':
+      case 'suit':
+        return (
+          <g>
+            {/* Inner silk top */}
+            <rect x="25" y="38" width="14" height="14" fill="#f8fafc" />
+            <path d="M 28 38 Q 32 42 36 38" fill={skinColor} />
+            {/* Chic open blazer */}
+            <path d="M 22 38 L 28 38 L 27 52 L 21 52 Z" fill={outfitColor} />
+            <path d="M 36 38 L 42 38 L 43 52 L 37 52 Z" fill={outfitColor} />
+            {/* Gold buttons on blazer */}
+            <circle cx="26" cy="46" r="0.8" fill="#facc15" />
+            <circle cx="38" cy="46" r="0.8" fill="#facc15" />
+          </g>
+        );
+
+      // FASHION 3: CHIC PEPLUM & NGỌC TRAI
+      case 'female_fashion_chic':
+      case 'shirt':
+        return (
+          <g>
+            <path d="M 23 38 L 41 38 L 42 47 L 22 47 Z" fill={outfitColor} />
+            <path d="M 26 38 Q 32 42 38 38" fill={skinColor} />
+            {/* Pearl buttons */}
+            <circle cx="32" cy="42" r="0.9" fill="#ffffff" />
+            <circle cx="32" cy="45" r="0.9" fill="#ffffff" />
+            {/* Peplum flair & pencil skirt */}
+            <path d="M 21.5 47 L 42.5 47 L 42 53 L 22 53 Z" fill="#1e293b" />
+          </g>
+        );
+
+      // THOẢI MÁI: HOODIE PASTEL
+      case 'casual_hoodie':
+      case 'hoodie':
+      default:
+        return (
+          <g>
+            <path d="M 21 38 L 43 38 L 43 52.5 L 21 52.5 Z" fill={outfitColor} rx="2" />
+            <rect x="26" y="46" width="12" height="5" rx="1.5" fill="rgba(0,0,0,0.12)" />
+            <line x1="29.5" y1="39" x2="29.5" y2="43" stroke="#ffffff" strokeWidth="1" />
+            <line x1="34.5" y1="39" x2="34.5" y2="43" stroke="#ffffff" strokeWidth="1" />
+          </g>
+        );
+    }
+  };
+
+  // 5. SLEEVES & ARMS (Tailored cleanly based on outfit type, NEVER covers hands)
+  const renderArms = () => {
+    // Determine if sleeveless (e.g. basketball jersey, activewear gym top)
+    const isSleeveless = outfitStyle === 'sport_jersey' || outfitStyle === 'female_sport_active';
+    // Determine if short sleeves (T-shirt, gym tee, tennis polo)
+    const isShortSleeve =
+      outfitStyle === 'sport_gym' ||
+      outfitStyle === 'casual_tee' ||
+      outfitStyle === 'casual_polo' ||
+      outfitStyle === 'female_sport_tennis';
+
+    if (isSleeveless) {
+      // Entire arm is bare skin!
+      return (
+        <g fill={skinColor}>
+          {/* Left Arm */}
+          <rect x="17.2" y="39" width="4" height="11" rx="2" stroke="rgba(0,0,0,0.1)" strokeWidth="0.5" />
+          {/* Right Arm */}
+          <rect x="42.8" y="39" width="4" height="11" rx="2" stroke="rgba(0,0,0,0.1)" strokeWidth="0.5" />
+        </g>
+      );
+    }
+
+    if (isShortSleeve) {
+      return (
+        <g>
+          {/* Short sleeve tops with outfit color */}
+          <rect x="17" y="38.5" width="4.5" height="5.5" rx="1.5" fill={outfitColor} />
+          <rect x="42.5" y="38.5" width="4.5" height="5.5" rx="1.5" fill={outfitColor} />
+          {/* Bare skin forearms */}
+          <rect x="17.2" y="44" width="4" height="6" rx="1.5" fill={skinColor} />
+          <rect x="42.8" y="44" width="4" height="6" rx="1.5" fill={skinColor} />
+        </g>
+      );
+    }
+
+    // Long sleeve styles (Suit, Hoodie, Blazer, Dress)
+    return (
+      <g fill={outfitColor}>
+        {/* Sleeves stop cleanly at y=49, well above the hands at y=51 */}
+        <rect x="17" y="38.5" width="4.5" height="10" rx="1.8" />
+        <rect x="42.5" y="38.5" width="4.5" height="10" rx="1.8" />
+        {/* Subtle cuff trim */}
+        <line x1="17" y1="48.5" x2="21.5" y2="48.5" stroke="rgba(0,0,0,0.2)" strokeWidth="1" />
+        <line x1="42.5" y1="48.5" x2="47" y2="48.5" stroke="rgba(0,0,0,0.2)" strokeWidth="1" />
+      </g>
+    );
+  };
+
+  // 6. EYES & SMILE
   const renderEyes = () => {
     if (isFacingUp) return null;
 
@@ -451,21 +655,16 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
 
     return (
       <g>
-        {/* Left Eye Sclera & Iris */}
         <circle cx={leftEyeX} cy={eyeY} r="3.2" fill="#ffffff" />
         <circle cx={leftEyeX} cy={eyeY} r="2.1" fill={eyeColor} />
-        {/* Eye Sparkle Highlights */}
         <circle cx={leftEyeX - 0.7} cy={eyeY - 0.7} r="1" fill="#ffffff" />
         {isFemale && <circle cx={leftEyeX + 0.8} cy={eyeY + 0.8} r="0.6" fill="#ffffff" />}
 
-        {/* Right Eye Sclera & Iris */}
         <circle cx={rightEyeX} cy={eyeY} r="3.2" fill="#ffffff" />
         <circle cx={rightEyeX} cy={eyeY} r="2.1" fill={eyeColor} />
-        {/* Eye Sparkle Highlights */}
         <circle cx={rightEyeX - 0.7} cy={eyeY - 0.7} r="1" fill="#ffffff" />
         {isFemale && <circle cx={rightEyeX + 0.8} cy={eyeY + 0.8} r="0.6" fill="#ffffff" />}
 
-        {/* Female Delicate Eyelashes */}
         {isFemale && (
           <g stroke="#0f172a" strokeWidth="1.2" strokeLinecap="round">
             <path d={`M ${leftEyeX - 2.5} ${eyeY - 2.2} Q ${leftEyeX} ${eyeY - 3.5} ${leftEyeX + 2.5} ${eyeY - 2.2}`} fill="none" />
@@ -475,7 +674,6 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
           </g>
         )}
 
-        {/* Male Crisp Confident Eyebrows at y=21 - 21.5 */}
         {!isFemale && (
           <g stroke="#0f172a" strokeWidth="1.5" strokeLinecap="round">
             <line x1={leftEyeX - 2.5} y1={eyeY - 4.2} x2={leftEyeX + 2.5} y2={eyeY - 3.8} />
@@ -483,11 +681,9 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
           </g>
         )}
 
-        {/* Cheerful Blush */}
         <ellipse cx={leftEyeX - 1} cy={eyeY + 4} rx={isFemale ? 3.2 : 2.2} ry="1.5" fill="#f43f5e" opacity={isFemale ? 0.45 : 0.3} />
         <ellipse cx={rightEyeX + 1} cy={eyeY + 4} rx={isFemale ? 3.2 : 2.2} ry="1.5" fill="#f43f5e" opacity={isFemale ? 0.45 : 0.3} />
 
-        {/* Cheerful Smile */}
         <path
           d={isFacingLeft ? 'M 26 32 Q 28 34.5 31 32' : 'M 30 32 Q 32 34.5 34 32'}
           stroke={isFemale ? '#e11d48' : '#991b1b'}
@@ -497,55 +693,6 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
         />
       </g>
     );
-  };
-
-  // OUTFIT
-  const renderOutfit = () => {
-    switch (outfitStyle) {
-      case 'suit':
-        return (
-          <g>
-            <path d={isFemale ? 'M 22 38 L 42 38 L 44 52 L 20 52 Z' : 'M 20 38 L 44 38 L 46 52 L 18 52 Z'} fill={outfitColor} />
-            <polygon points="32,45 28,38 36,38" fill="#ffffff" />
-            <polygon points="32,40 33,48 32,50 31,48" fill="#dc2626" />
-          </g>
-        );
-      case 'dress':
-        return (
-          <g>
-            <path d="M 23 38 L 41 38 L 48 54 L 16 54 Z" fill={outfitColor} />
-            <rect x="23" y="44" width="18" height="2.5" fill="#facc15" />
-            <rect x="30.5" y="43.5" width="3" height="3.5" fill="#ca8a04" rx="0.5" />
-            <path d="M 27 38 Q 32 41 37 38" stroke="#ffffff" strokeWidth="1.2" fill="none" />
-          </g>
-        );
-      case 'hoodie':
-        return (
-          <g>
-            <path d="M 20 38 L 44 38 L 45 53 L 19 53 Z" fill={outfitColor} rx="3" />
-            <rect x="25" y="46" width="14" height="6" rx="2" fill="rgba(0,0,0,0.15)" />
-            <line x1="29" y1="40" x2="29" y2="44" stroke="#ffffff" strokeWidth="1" />
-            <line x1="35" y1="40" x2="35" y2="44" stroke="#ffffff" strokeWidth="1" />
-          </g>
-        );
-      case 'shirt':
-        return (
-          <g>
-            <path d="M 21 38 L 43 38 L 44 52 L 20 52 Z" fill={outfitColor} />
-            <circle cx="32" cy="41" r="0.8" fill="#ffffff" />
-            <circle cx="32" cy="45" r="0.8" fill="#ffffff" />
-            <circle cx="32" cy="49" r="0.8" fill="#ffffff" />
-          </g>
-        );
-      case 'casual':
-      default:
-        return (
-          <g>
-            <path d="M 21 38 L 43 38 L 44 52 L 20 52 Z" fill={outfitColor} />
-            <path d="M 28 38 Q 32 42 36 38" stroke="#ffffff" strokeWidth="1.2" fill="none" />
-          </g>
-        );
-    }
   };
 
   return (
@@ -565,13 +712,20 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
         height={size}
         className="drop-shadow-lg overflow-visible"
       >
+        <defs>
+          {/* Exact circular clipping boundary matching head cx=32 cy=25 r=14 */}
+          <clipPath id="head-contour-clip">
+            <circle cx="32" cy="25" r="14" />
+          </clipPath>
+        </defs>
+
         {/* Floor Shadow */}
         <ellipse cx="32" cy="60" rx="14" ry="4" fill="rgba(0,0,0,0.35)" />
 
-        {/* LAYER 1: BACK HAIR (Encloses skull from behind) */}
+        {/* 1. BACK HAIR */}
         {renderBackHair()}
 
-        {/* Legs / Feet */}
+        {/* 2. LEGS & FEET */}
         {!isSitting ? (
           <g>
             <rect x="25" y="51" width="5" height="8" rx="2" fill="#1e293b" />
@@ -587,35 +741,38 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
           </g>
         )}
 
-        {/* Arms */}
-        <g fill={outfitColor}>
-          <rect x="17" y="39" width="4.5" height="11" rx="2" />
-          <rect x="42.5" y="39" width="4.5" height="11" rx="2" />
-          <circle cx="19.2" cy="51" r="2.2" fill={skinColor} />
-          <circle cx="44.8" cy="51" r="2.2" fill={skinColor} />
+        {/* 3. TORSO BODY OUTFIT (Stays strictly within x=21-43, leaving hands clear) */}
+        {renderOutfitTorso()}
+
+        {/* 4. SLEEVES & ARMS */}
+        {renderArms()}
+
+        {/* 5. HANDS: ALWAYS ON TOP, 100% VISIBLE & NEVER COVERED BY CLOTHING */}
+        <g>
+          {/* Left Hand */}
+          <circle cx="19.2" cy="51" r="2.6" fill={skinColor} stroke="rgba(0,0,0,0.2)" strokeWidth="0.6" />
+          {/* Right Hand */}
+          <circle cx="44.8" cy="51" r="2.6" fill={skinColor} stroke="rgba(0,0,0,0.2)" strokeWidth="0.6" />
         </g>
 
-        {/* Torso */}
-        {renderOutfit()}
-
-        {/* Neck */}
+        {/* 6. NECK */}
         <rect x="29" y="34" width="6" height="5" fill={skinColor} />
 
-        {/* LAYER 2: HEAD & EARS */}
+        {/* 7. HEAD & EARS */}
         <circle cx="32" cy="25" r="14" fill={skinColor} />
         <circle cx="18" cy="26" r="2.5" fill={skinColor} />
         <circle cx="46" cy="26" r="2.5" fill={skinColor} />
 
-        {/* LAYER 3: FRONT HAIR (Covers skull crown & forehead, stops above the eyes) */}
+        {/* 8. FRONT HAIR (Covers crown, strictly stops above eyes) */}
         {renderFrontHair()}
 
-        {/* LAYER 4: ACCESSORIES (Headwear, Caps, Beanies that cover head but stop above eyes) */}
+        {/* 9. ACCESSORIES (Băng rôn clipped exactly to head circumference) */}
         {renderAccessory()}
 
-        {/* LAYER 5: EYES & FACIAL EXPRESSIONS (Guaranteed 100% UNBLOCKED & RADIANT) */}
+        {/* 10. EYES (100% unblocked & radiant) */}
         {renderEyes()}
 
-        {/* Action Props */}
+        {/* 11. ACTION PROPS */}
         {currentAction === 'fishing' && (
           <g>
             <line x1="45" y1="46" x2="68" y2="20" stroke="#78350f" strokeWidth="2.5" strokeLinecap="round" />

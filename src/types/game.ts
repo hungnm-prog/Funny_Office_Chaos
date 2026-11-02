@@ -7,7 +7,7 @@ export interface CharacterAppearance {
   hairStyle: string;
   skinColor: string;
   outfitColor: string;
-  outfitStyle: 'suit' | 'hoodie' | 'shirt' | 'casual' | 'dress';
+  outfitStyle: string;
   eyeColor: string;
   accessory?: 'none' | 'glasses' | 'headphones' | 'cap' | 'beanie' | 'headband' | 'badge';
 }

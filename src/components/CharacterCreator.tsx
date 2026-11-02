@@ -76,27 +76,30 @@ const FEMALE_HAIR_STYLES = [
 ];
 
 const MALE_OUTFIT_STYLES = [
-  { id: 'suit', label: 'Vest Nam Công Sở' },
-  { id: 'shirt', label: 'Sơ Mi Lịch Lãm' },
-  { id: 'casual', label: 'Áo Phông Năng Động' },
-  { id: 'hoodie', label: 'Hoodie Trẻ Trung' },
+  { id: 'sport_gym', label: 'Gym / Fitness Pro', category: 'Thể thao', desc: 'Áo thun thể thao ôm sát, lộ cơ bắp' },
+  { id: 'sport_jersey', label: 'Bóng Rổ Jersey #07', category: 'Thể thao', desc: 'Áo tank top sát nách năng động, phóng khoáng' },
+  { id: 'casual_tee', label: 'Áo Phông Streetwear', category: 'Thoải mái', desc: 'Áo phông oversize trẻ trung đường phố' },
+  { id: 'casual_polo', label: 'Áo Polo Năng Động', category: 'Thoải mái', desc: 'Áo polo cổ bẻ thể thao thanh lịch' },
+  { id: 'hoodie', label: 'Hoodie Trẻ Trung', category: 'Thoải mái', desc: 'Áo nỉ hoodie có túi kangaroo ấm áp' },
+  { id: 'suit', label: 'Vest Nam Lịch Lãm', category: 'Công sở', desc: 'Vest sang trọng kết hợp cà vạt đỏ lịch sự' },
 ] as const;
 
 const FEMALE_OUTFIT_STYLES = [
-  { id: 'dress', label: 'Váy Công Sở Cao Cấp' },
-  { id: 'suit', label: 'Vest Nữ Quyền Lực' },
-  { id: 'shirt', label: 'Sơ Mi Điệu Đà' },
-  { id: 'casual', label: 'Áo Phông Nữ Tính' },
-  { id: 'hoodie', label: 'Hoodie Dễ Thương' },
+  { id: 'female_sport_active', label: 'Gym & Yoga Activewear', category: 'Thể thao', desc: 'Áo crop-top thể thao & quần legging tôn dáng' },
+  { id: 'female_sport_tennis', label: 'Set Váy Tennis Sành Điệu', category: 'Thể thao', desc: 'Áo polo phối chân váy xếp ly xòe nhẹ trẻ trung' },
+  { id: 'female_fashion_dress', label: 'Váy Runway Dạ Tiệc', category: 'Fashion', desc: 'Đầm dạ tiệc thắt lưng vàng quý phái tôn dáng' },
+  { id: 'female_fashion_blazer', label: 'Blazer Parisian', category: 'Fashion', desc: 'Blazer suông cúc vàng phối lụa sành điệu' },
+  { id: 'female_fashion_chic', label: 'Chic Peplum & Ngọc Trai', category: 'Fashion', desc: 'Áo peplum thời thượng đính ngọc trai quý phái' },
+  { id: 'casual_hoodie', label: 'Hoodie Pastel Xinh Xắn', category: 'Thoải mái', desc: 'Hoodie phom rộng ngọt ngào thoải mái' },
 ] as const;
 
 // PHỤ KIỆN BAO PHỦ ĐẦU
 const ACCESSORIES = [
   { id: 'none', label: 'Không Có Phụ Kiện', desc: 'Hiển thị mái tóc trọn vẹn không che' },
+  { id: 'headband', label: 'Băng Rôn Thể Thao (Chuẩn Vòm Đầu)', desc: 'Băng rôn ôm khít tuyệt đối viền sọ theo chu vi đầu (không thừa ngoài, không lọt trong)' },
   { id: 'cap', label: 'Mũ Lưỡi Trai (Bao Phủ Đầu)', desc: 'Mũ lưỡi trai snapback trẻ trung ôm trọn vòm đầu' },
   { id: 'beanie', label: 'Mũ Len Beanie (Bao Phủ Đầu)', desc: 'Mũ len ấm áp kéo phủ trùm kín đầu và trán' },
-  { id: 'headphones', label: 'Tai Nghe Chụp Tai Gaming (Bao Phủ Đầu)', desc: 'Quai tai nghe đệm lớn vòng ôm trọn vòm đầu' },
-  { id: 'headband', label: 'Băng Đô Thể Thao (Bao Đầu)', desc: 'Băng đô thể thao quấn quanh trán và thái dương' },
+  { id: 'headphones', label: 'Tai Nghe Gaming (Bao Phủ Đầu)', desc: 'Quai tai nghe đệm lớn vòng ôm trọn vòm đầu' },
   { id: 'glasses', label: 'Kính Mắt Trí Thức', desc: 'Kính mắt gọng vuông phong thái trí thức' },
 ] as const;
 
@@ -134,7 +137,7 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
       hairStyle: 'sidepart7_3',
       skinColor: '#fed7aa',
       outfitColor: '#2563eb',
-      outfitStyle: 'suit',
+      outfitStyle: 'casual_tee',
       eyeColor: '#0f172a',
       accessory: 'none',
     }
@@ -146,7 +149,7 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
   const handleGenderChange = (newGender: Gender) => {
     setGender(newGender);
     const newHairStyle = newGender === 'male' ? 'sidepart7_3' : 'female_wavy';
-    const newOutfitStyle = newGender === 'male' ? 'suit' : 'dress';
+    const newOutfitStyle = newGender === 'male' ? 'casual_tee' : 'female_fashion_dress';
     const newOutfitColor = newGender === 'male' ? '#2563eb' : '#db2777';
 
     if (
@@ -581,22 +584,37 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
                   </div>
 
                   <div>
-                    <h4 className="text-sm font-bold text-slate-200 mb-2.5">Kiểu Dáng Trang Phục</h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {currentOutfitStyles.map((style) => (
-                        <button
-                          key={style.id}
-                          type="button"
-                          onClick={() => setAppearance({ ...appearance, outfitStyle: style.id as any })}
-                          className={`px-3 py-2.5 rounded-xl border text-xs font-semibold transition-all text-left ${
-                            appearance.outfitStyle === style.id
-                              ? 'bg-indigo-950/80 border-indigo-500 text-indigo-300 shadow-md'
-                              : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
-                          }`}
-                        >
-                          {style.label}
-                        </button>
-                      ))}
+                    <h4 className="text-sm font-bold text-slate-200 mb-2.5 flex items-center justify-between">
+                      <span>Kiểu Dáng Trang Phục ({gender === 'male' ? 'Từ Thoải Mái Đến Thể Thao' : 'Thể Thao & Fashion Sành Điệu'})</span>
+                      <span className="text-xs text-indigo-400 font-medium">Bàn tay luôn hiển thị 100%</span>
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {currentOutfitStyles.map((style) => {
+                        const isSelected = appearance.outfitStyle === style.id;
+                        return (
+                          <button
+                            key={style.id}
+                            type="button"
+                            onClick={() => setAppearance({ ...appearance, outfitStyle: style.id as any })}
+                            className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-indigo-950/90 border-indigo-500 text-white shadow-md'
+                                : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-xs text-white flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                                {style.label}
+                              </span>
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-indigo-300 font-medium border border-slate-700/60">
+                                {style.category}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-slate-400 mt-1">{style.desc}</p>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
