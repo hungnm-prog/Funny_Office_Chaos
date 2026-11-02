@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Character, CharacterStatus, Seat, ToastItem, ChatMessage, DimensionId } from './types/game';
 import { INITIAL_COLLEAGUES, OFFICE_RANDOM_CHATS } from './constants/colleagues';
-import { DIMENSIONS } from './constants/officeLayout';
+import { DIMENSIONS, MAP_WIDTH, MAP_HEIGHT } from './constants/officeLayout';
 import { VietnamClock } from './components/VietnamClock';
 import { CharacterCreator } from './components/CharacterCreator';
 import { GameCanvas } from './components/GameCanvas';
@@ -53,6 +53,18 @@ export function App() {
   userCharRef.current = userCharacter;
   const currentDimRef = useRef(currentDimension);
   currentDimRef.current = currentDimension;
+
+  // Single authoritative physics & movement state (bypasses React render delays for true 60-120 FPS)
+  const playerPhysRef = useRef({
+    x: userCharacter?.position.x ?? 1210,
+    y: userCharacter?.position.y ?? 520,
+    targetX: null as number | null,
+    targetY: null as number | null,
+    isMoving: false,
+    direction: (userCharacter?.direction ?? 'down') as 'left' | 'right' | 'up' | 'down',
+  });
+  const keysDownRef = useRef(new Set<string>());
+  const lastWsSendRef = useRef<number>(0);
 
   const channelRef = useRef<BroadcastChannel | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -209,6 +221,12 @@ export function App() {
       if (curChar) {
         const targetConfig = DIMENSIONS.find((d) => d.id === dimId);
         const spawnCoord = targetConfig?.defaultSpawn || { x: 1210, y: 520 };
+
+        playerPhysRef.current.x = spawnCoord.x;
+        playerPhysRef.current.y = spawnCoord.y;
+        playerPhysRef.current.targetX = null;
+        playerPhysRef.current.targetY = null;
+        playerPhysRef.current.isMoving = false;
 
         const updatedUser: Character = {
           ...curChar,
@@ -379,120 +397,256 @@ export function App() {
     return () => clearInterval(interval);
   }, [colleagues]);
 
-  // Smooth Movement interpolation loop - decoupled from userCharacter state updates
-  const isMoving = userCharacter?.isMoving ?? false;
-  const targetX = userCharacter?.targetPosition?.x;
-  const targetY = userCharacter?.targetPosition?.y;
-
-  useEffect(() => {
-    if (!isMoving || targetX === undefined || targetY === undefined) {
-      if (animFrameRef.current) {
-        cancelAnimationFrame(animFrameRef.current);
-        animFrameRef.current = null;
-      }
-      return;
-    }
+  // Unified, Authoritative Physics & Movement Loop (WASD + Click-to-Move at pure 60-120 FPS)
+  const startMovementLoop = useCallback(() => {
+    if (animFrameRef.current) return; // Loop already active
 
     const updateMovement = () => {
-      const curChar = userCharRef.current;
-      if (!curChar || !curChar.targetPosition) return;
+      const phys = playerPhysRef.current;
+      const keys = keysDownRef.current;
+      let moved = false;
 
-      const { x: curX, y: curY } = curChar.position;
-      const { x: tgtX, y: tgtY } = curChar.targetPosition;
+      // 1. WASD & Arrow Keys
+      const hasKeyMovement =
+        keys.has('w') ||
+        keys.has('a') ||
+        keys.has('s') ||
+        keys.has('d') ||
+        keys.has('arrowup') ||
+        keys.has('arrowdown') ||
+        keys.has('arrowleft') ||
+        keys.has('arrowright');
 
-      const dx = tgtX - curX;
-      const dy = tgtY - curY;
-      const dist = Math.hypot(dx, dy);
+      if (hasKeyMovement) {
+        let dx = 0;
+        let dy = 0;
+        if (keys.has('w') || keys.has('arrowup')) dy -= 1;
+        if (keys.has('s') || keys.has('arrowdown')) dy += 1;
+        if (keys.has('a') || keys.has('arrowleft')) dx -= 1;
+        if (keys.has('d') || keys.has('arrowright')) dx += 1;
 
-      const speed = 7.5;
+        if (dx !== 0 || dy !== 0) {
+          const len = Math.hypot(dx, dy);
+          const isShift = keys.has('shift');
+          const speed = isShift ? 10.5 : 7.0;
 
-      if (dist <= speed) {
-        const arrivedChar: Character = {
-          ...curChar,
-          position: { x: tgtX, y: tgtY },
-          targetPosition: undefined,
-          isMoving: false,
-        };
-        setUserCharacter(arrivedChar);
-        saveCharacterToStorage(arrivedChar);
+          phys.x = Math.max(120, Math.min(MAP_WIDTH - 120, phys.x + (dx / len) * speed));
+          phys.y = Math.max(160, Math.min(MAP_HEIGHT - 120, phys.y + (dy / len) * speed));
 
-        // Notify WS upon arrival
+          let dir: 'left' | 'right' | 'up' | 'down' = 'down';
+          if (Math.abs(dx) > Math.abs(dy)) {
+            dir = dx > 0 ? 'right' : 'left';
+          } else {
+            dir = dy > 0 ? 'down' : 'up';
+          }
+          phys.direction = dir;
+          phys.isMoving = true;
+          moved = true;
+        }
+      }
+      // 2. Click to Move (if no WASD keys currently held)
+      else if (phys.targetX !== null && phys.targetY !== null) {
+        const dx = phys.targetX - phys.x;
+        const dy = phys.targetY - phys.y;
+        const dist = Math.hypot(dx, dy);
+        const speed = 7.5;
+
+        if (dist <= speed) {
+          phys.x = phys.targetX;
+          phys.y = phys.targetY;
+          phys.targetX = null;
+          phys.targetY = null;
+          phys.isMoving = false;
+          moved = true;
+        } else {
+          const angle = Math.atan2(dy, dx);
+          phys.x += Math.cos(angle) * speed;
+          phys.y += Math.sin(angle) * speed;
+
+          let dir: 'left' | 'right' | 'up' | 'down' = 'down';
+          if (Math.abs(dx) > Math.abs(dy)) {
+            dir = dx > 0 ? 'right' : 'left';
+          } else {
+            dir = dy > 0 ? 'down' : 'up';
+          }
+          phys.direction = dir;
+          phys.isMoving = true;
+          moved = true;
+        }
+      }
+
+      if (moved) {
+        setUserCharacter((prev) => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            position: { x: phys.x, y: phys.y },
+            direction: phys.direction,
+            isMoving: phys.isMoving,
+            targetPosition:
+              phys.targetX !== null && phys.targetY !== null
+                ? { x: phys.targetX, y: phys.targetY }
+                : undefined,
+            isSitting: false,
+            sittingSeatId: undefined,
+          };
+        });
+
+        // Throttle WebSocket sync to 100ms
+        const now = performance.now();
+        if (now - lastWsSendRef.current > 100) {
+          lastWsSendRef.current = now;
+          if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.send(
+              JSON.stringify({
+                type: 'PLAYER_MOVE',
+                data: {
+                  position: { x: phys.x, y: phys.y },
+                  direction: phys.direction,
+                  isMoving: phys.isMoving,
+                  isSitting: false,
+                  dimensionId: currentDimRef.current,
+                },
+              })
+            );
+          }
+        }
+      }
+
+      // Check whether to continue loop
+      const stillHasKeys =
+        keysDownRef.current.has('w') ||
+        keysDownRef.current.has('a') ||
+        keysDownRef.current.has('s') ||
+        keysDownRef.current.has('d') ||
+        keysDownRef.current.has('arrowup') ||
+        keysDownRef.current.has('arrowdown') ||
+        keysDownRef.current.has('arrowleft') ||
+        keysDownRef.current.has('arrowright');
+      const stillHasTarget = phys.targetX !== null && phys.targetY !== null;
+
+      if (stillHasKeys || stillHasTarget) {
+        animFrameRef.current = requestAnimationFrame(updateMovement);
+      } else {
+        // Stopped completely!
+        animFrameRef.current = null;
+        phys.isMoving = false;
+
+        setUserCharacter((prev) => {
+          if (!prev) return null;
+          const stoppedChar = {
+            ...prev,
+            position: { x: phys.x, y: phys.y },
+            direction: phys.direction,
+            isMoving: false,
+            targetPosition: undefined,
+          };
+          saveCharacterToStorage(stoppedChar);
+          return stoppedChar;
+        });
+
+        // Final arrival sync via WebSocket
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
           wsRef.current.send(
             JSON.stringify({
               type: 'PLAYER_MOVE',
               data: {
-                position: arrivedChar.position,
-                direction: arrivedChar.direction,
+                position: { x: phys.x, y: phys.y },
+                direction: phys.direction,
                 isMoving: false,
-                isSitting: arrivedChar.isSitting,
-                sittingSeatId: arrivedChar.sittingSeatId,
-                currentAction: arrivedChar.currentAction,
+                isSitting: false,
                 dimensionId: currentDimRef.current,
               },
             })
           );
         }
-        return; // Stop animation loop when arrived!
-      } else {
-        const angle = Math.atan2(dy, dx);
-        const nextX = curX + Math.cos(angle) * speed;
-        const nextY = curY + Math.sin(angle) * speed;
-
-        let dir: 'left' | 'right' | 'up' | 'down' = 'down';
-        if (Math.abs(dx) > Math.abs(dy)) {
-          dir = dx > 0 ? 'right' : 'left';
-        } else {
-          dir = dy > 0 ? 'down' : 'up';
-        }
-
-        setUserCharacter((prev) =>
-          prev
-            ? {
-                ...prev,
-                position: { x: nextX, y: nextY },
-                direction: dir,
-                isMoving: true,
-                isSitting: false,
-                sittingSeatId: undefined,
-              }
-            : null
-        );
-
-        animFrameRef.current = requestAnimationFrame(updateMovement);
       }
     };
 
     animFrameRef.current = requestAnimationFrame(updateMovement);
+  }, [saveCharacterToStorage]);
+
+  // Global Keyboard Listener for WASD & Arrow Keys
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      if (
+        activeEl &&
+        (activeEl.tagName === 'INPUT' ||
+          activeEl.tagName === 'TEXTAREA' ||
+          activeEl.getAttribute('contenteditable') === 'true')
+      ) {
+        return;
+      }
+
+      const key = e.key.toLowerCase();
+      if (
+        key === 'w' ||
+        key === 'a' ||
+        key === 's' ||
+        key === 'd' ||
+        key === 'arrowup' ||
+        key === 'arrowdown' ||
+        key === 'arrowleft' ||
+        key === 'arrowright' ||
+        key === 'shift'
+      ) {
+        e.preventDefault();
+        keysDownRef.current.add(key);
+        // Pressing keys immediately cancels any previous floor-click destination
+        playerPhysRef.current.targetX = null;
+        playerPhysRef.current.targetY = null;
+        startMovementLoop();
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      keysDownRef.current.delete(key);
+    };
+
+    const handleBlur = () => {
+      keysDownRef.current.clear();
+    };
+
+    window.addEventListener('keydown', handleKeyDown, { passive: false });
+    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('blur', handleBlur);
+
     return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('blur', handleBlur);
       if (animFrameRef.current) {
         cancelAnimationFrame(animFrameRef.current);
         animFrameRef.current = null;
       }
     };
-  }, [isMoving, targetX, targetY, saveCharacterToStorage]);
+  }, [startMovementLoop]);
 
-  // Move user on floor click or keypress
-  const handleMoveUser = useCallback((tX: number, tY: number) => {
-    setUserCharacter((prev) =>
-      prev
-        ? {
-            ...prev,
-            targetPosition: { x: tX, y: tY },
-            isMoving: true,
-            isSitting: false,
-            sittingSeatId: undefined,
-            currentAction: 'idle',
-          }
-        : null
-    );
-  }, []);
+  // Move user on floor click
+  const handleMoveUser = useCallback(
+    (tX: number, tY: number) => {
+      playerPhysRef.current.targetX = tX;
+      playerPhysRef.current.targetY = tY;
+      playerPhysRef.current.isMoving = true;
+      startMovementLoop();
+    },
+    [startMovementLoop]
+  );
 
   // Seat user on chair click
   const handleSeatUser = useCallback(
     (seat: Seat) => {
       const curChar = userCharRef.current;
       if (!curChar) return;
+
+      playerPhysRef.current.x = seat.x;
+      playerPhysRef.current.y = seat.y;
+      playerPhysRef.current.targetX = null;
+      playerPhysRef.current.targetY = null;
+      playerPhysRef.current.isMoving = false;
+      playerPhysRef.current.direction = seat.direction;
 
       let action: any = 'working';
       if (seat.type === 'dining') action = 'eating';
@@ -753,6 +907,11 @@ export function App() {
           onCancel={() => setIsEditingCharacter(false)}
           onSave={(savedChar) => {
             const charWithDim = { ...savedChar, dimensionId: currentDimension };
+            playerPhysRef.current.x = charWithDim.position.x;
+            playerPhysRef.current.y = charWithDim.position.y;
+            playerPhysRef.current.targetX = null;
+            playerPhysRef.current.targetY = null;
+            playerPhysRef.current.isMoving = false;
             setUserCharacter(charWithDim);
             saveCharacterToStorage(charWithDim);
             setIsEditingCharacter(false);

@@ -38,7 +38,113 @@ interface ClickRipple {
   y: number;
 }
 
-export const GameCanvas: React.FC<GameCanvasProps> = ({
+interface CharacterWorldItemProps {
+  char: Character;
+  isUser: boolean;
+  viewMode: '2d' | '3d';
+  yaw: number;
+  pitch: number;
+}
+
+const CharacterWorldItem: React.FC<CharacterWorldItemProps> = React.memo(
+  ({ char, isUser, viewMode, yaw, pitch }) => {
+    return (
+      <div
+        className="absolute pointer-events-none"
+        style={{
+          left: char.position.x,
+          top: char.position.y,
+          transform:
+            viewMode === '3d'
+              ? `translate3d(-50%, -75%, 0px) rotateZ(${-yaw}deg) rotateX(${-pitch}deg)`
+              : 'translate3d(-50%, -75%, 0px)',
+          transformOrigin: '50% 85%',
+          transformStyle: 'preserve-3d',
+          zIndex: Math.floor(char.position.y),
+          transition: isUser ? 'none' : 'left 0.12s linear, top 0.12s linear',
+          willChange: isUser ? 'left, top' : 'auto',
+        }}
+      >
+        {/* 1. PERSISTENT CHAT BUBBLE ALWAYS VISIBLE ABOVE CHARACTER'S HEAD */}
+        <div className="relative mb-2 flex flex-col items-center">
+          <div className="max-w-[220px] rounded-2xl bg-slate-900/95 backdrop-blur-md border border-slate-700 text-slate-100 px-3 py-1.5 shadow-2xl flex flex-col items-center text-center">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  char.status === 'online'
+                    ? 'bg-emerald-400'
+                    : char.status === 'busy'
+                    ? 'bg-amber-400'
+                    : 'bg-slate-400'
+                }`}
+              />
+              <span className="text-[10px] font-black text-indigo-300">
+                {isUser ? `${char.name} (Tôi)` : char.name}
+              </span>
+            </div>
+
+            <p className="text-[11px] leading-snug font-medium text-white break-words">
+              {char.lastMessage.split(/(@\S+)/g).map((part, idx) =>
+                part.startsWith('@') ? (
+                  <span
+                    key={idx}
+                    className="font-bold text-amber-300 bg-amber-950/80 px-1 py-0.2 rounded border border-amber-600/40"
+                  >
+                    {part}
+                  </span>
+                ) : (
+                  part
+                )
+              )}
+            </p>
+
+            <span className="text-[8px] text-slate-500 font-mono mt-0.5">
+              {char.lastMessageTime}
+            </span>
+          </div>
+
+          {/* Speech Bubble Arrow */}
+          <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[7px] border-t-slate-700 -mt-[1px]" />
+        </div>
+
+        {/* 2. CHARACTER AVATAR STANDING IN 3D */}
+        <div className="relative flex flex-col items-center">
+          {char.isSitting && (
+            <span className="absolute -top-3 px-1.5 py-0.2 rounded-full bg-indigo-900/90 border border-indigo-500 text-[9px] font-bold text-indigo-200 shadow z-30">
+              Đang ngồi
+            </span>
+          )}
+
+          <CharacterAvatar
+            appearance={char.appearance}
+            direction={char.direction}
+            isMoving={char.isMoving}
+            isSitting={char.isSitting}
+            currentAction={char.currentAction}
+            size={58}
+          />
+
+          {/* Character Nameplate */}
+          <div
+            className={`mt-1 px-2 py-0.5 rounded-full text-[10px] font-black tracking-wide flex items-center gap-1 shadow-md border ${
+              isUser
+                ? 'bg-indigo-600 border-indigo-300 text-white'
+                : 'bg-slate-900/90 border-slate-700 text-slate-200'
+            }`}
+          >
+            <span>{char.name}</span>
+            <span className="text-[8px] opacity-75 font-normal">
+              • {char.role.split(' ')[0]}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+);
+CharacterWorldItem.displayName = 'CharacterWorldItem';
+
+export const GameCanvas: React.FC<GameCanvasProps> = React.memo(({
   userCharacter,
   allCharacters,
   currentDimension = 'office',
@@ -67,112 +173,6 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const dragStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0, hasMoved: false });
   const [ripples, setRipples] = useState<ClickRipple[]>([]);
   const panRafRef = useRef<number | null>(null);
-
-  const userPosRef = useRef(userCharacter.position);
-  userPosRef.current = userCharacter.position;
-
-  const onMoveUserRef = useRef(onMoveUser);
-  onMoveUserRef.current = onMoveUser;
-
-  // Smooth WASD & Arrow Key Continuous Movement Loop (60-120 FPS without OS repeating delay)
-  const keysPressedRef = useRef(new Set<string>());
-  const walkRafRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    const startWalkingLoop = () => {
-      if (walkRafRef.current) return;
-
-      const stepWalk = () => {
-        const keys = keysPressedRef.current;
-        if (keys.size === 0) {
-          walkRafRef.current = null;
-          return;
-        }
-
-        let dx = 0;
-        let dy = 0;
-        if (keys.has('arrowup') || keys.has('w')) dy -= 1;
-        if (keys.has('arrowdown') || keys.has('s')) dy += 1;
-        if (keys.has('arrowleft') || keys.has('a')) dx -= 1;
-        if (keys.has('arrowright') || keys.has('d')) dx += 1;
-
-        if (dx !== 0 || dy !== 0) {
-          const len = Math.hypot(dx, dy);
-          const isShift = keys.has('shift');
-          const speed = isShift ? 11 : 7;
-          const stepX = (dx / len) * speed;
-          const stepY = (dy / len) * speed;
-
-          const currentX = userPosRef.current.x;
-          const currentY = userPosRef.current.y;
-          const nextX = Math.max(120, Math.min(MAP_WIDTH - 120, currentX + stepX));
-          const nextY = Math.max(160, Math.min(MAP_HEIGHT - 120, currentY + stepY));
-
-          onMoveUserRef.current(nextX, nextY);
-        }
-
-        walkRafRef.current = requestAnimationFrame(stepWalk);
-      };
-
-      walkRafRef.current = requestAnimationFrame(stepWalk);
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const activeEl = document.activeElement;
-      if (
-        activeEl &&
-        (activeEl.tagName === 'INPUT' ||
-          activeEl.tagName === 'TEXTAREA' ||
-          activeEl.getAttribute('contenteditable') === 'true')
-      ) {
-        return;
-      }
-
-      const key = e.key.toLowerCase();
-      if (
-        key === 'w' ||
-        key === 'a' ||
-        key === 's' ||
-        key === 'd' ||
-        key === 'arrowup' ||
-        key === 'arrowdown' ||
-        key === 'arrowleft' ||
-        key === 'arrowright' ||
-        key === 'shift'
-      ) {
-        e.preventDefault();
-        keysPressedRef.current.add(key);
-        startWalkingLoop();
-      }
-    };
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      const key = e.key.toLowerCase();
-      keysPressedRef.current.delete(key);
-    };
-
-    const handleBlur = () => {
-      keysPressedRef.current.clear();
-      if (walkRafRef.current) {
-        cancelAnimationFrame(walkRafRef.current);
-        walkRafRef.current = null;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown, { passive: false });
-    window.addEventListener('keyup', handleKeyUp);
-    window.addEventListener('blur', handleBlur);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-      window.removeEventListener('blur', handleBlur);
-      if (walkRafRef.current) {
-        cancelAnimationFrame(walkRafRef.current);
-        walkRafRef.current = null;
-      }
-    };
-  }, []);
 
   // Smoothly center on character on initial mount or when requested
   useEffect(() => {
@@ -726,105 +726,20 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           {/* ========================================================= */}
           {/* CHARACTERS RENDERING (WITH 3D BILLBOARDING) */}
           {/* ========================================================= */}
-          {visibleCharacters.map((char) => {
-            const isUser = char.id === userCharacter.id;
-
-            return (
-              <div
-                key={char.id}
-                className="absolute pointer-events-none"
-                style={{
-                  left: char.position.x,
-                  top: char.position.y,
-                  transform:
-                    viewMode === '3d'
-                      ? `translate3d(-50%, -75%, 0px) rotateZ(${-yaw}deg) rotateX(${-pitch}deg)`
-                      : 'translate3d(-50%, -75%, 0px)',
-                  transformOrigin: '50% 85%',
-                  transformStyle: 'preserve-3d',
-                  zIndex: Math.floor(char.position.y),
-                  transition: isUser ? 'none' : 'left 0.12s linear, top 0.12s linear',
-                  willChange: isUser ? 'left, top' : 'auto',
-                }}
-              >
-                {/* 1. PERSISTENT CHAT BUBBLE ALWAYS VISIBLE ABOVE CHARACTER'S HEAD */}
-                <div className="relative mb-2 flex flex-col items-center">
-                  <div className="max-w-[220px] rounded-2xl bg-slate-900/95 backdrop-blur-md border border-slate-700 text-slate-100 px-3 py-1.5 shadow-2xl flex flex-col items-center text-center">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <span
-                        className={`w-2 h-2 rounded-full ${
-                          char.status === 'online'
-                            ? 'bg-emerald-400'
-                            : char.status === 'busy'
-                            ? 'bg-amber-400'
-                            : 'bg-slate-400'
-                        }`}
-                      />
-                      <span className="text-[10px] font-black text-indigo-300">
-                        {isUser ? `${char.name} (Tôi)` : char.name}
-                      </span>
-                    </div>
-
-                    <p className="text-[11px] leading-snug font-medium text-white break-words">
-                      {char.lastMessage.split(/(@\S+)/g).map((part, idx) =>
-                        part.startsWith('@') ? (
-                          <span
-                            key={idx}
-                            className="font-bold text-amber-300 bg-amber-950/80 px-1 py-0.2 rounded border border-amber-600/40"
-                          >
-                            {part}
-                          </span>
-                        ) : (
-                          part
-                        )
-                      )}
-                    </p>
-
-                    <span className="text-[8px] text-slate-500 font-mono mt-0.5">
-                      {char.lastMessageTime}
-                    </span>
-                  </div>
-
-                  {/* Speech Bubble Arrow */}
-                  <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[7px] border-t-slate-700 -mt-[1px]" />
-                </div>
-
-                {/* 2. CHARACTER AVATAR STANDING IN 3D */}
-                <div className="relative flex flex-col items-center">
-                  {char.isSitting && (
-                    <span className="absolute -top-3 px-1.5 py-0.2 rounded-full bg-indigo-900/90 border border-indigo-500 text-[9px] font-bold text-indigo-200 shadow z-30">
-                      Đang ngồi
-                    </span>
-                  )}
-
-                  <CharacterAvatar
-                    appearance={char.appearance}
-                    direction={char.direction}
-                    isMoving={char.isMoving}
-                    isSitting={char.isSitting}
-                    currentAction={char.currentAction}
-                    size={58}
-                  />
-
-                  {/* Character Nameplate */}
-                  <div
-                    className={`mt-1 px-2 py-0.5 rounded-full text-[10px] font-black tracking-wide flex items-center gap-1 shadow-md border ${
-                      isUser
-                        ? 'bg-indigo-600 border-indigo-300 text-white'
-                        : 'bg-slate-900/90 border-slate-700 text-slate-200'
-                    }`}
-                  >
-                    <span>{char.name}</span>
-                    <span className="text-[8px] opacity-75 font-normal">
-                      • {char.role.split(' ')[0]}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          {visibleCharacters.map((char) => (
+            <CharacterWorldItem
+              key={char.id}
+              char={char}
+              isUser={char.id === userCharacter.id}
+              viewMode={viewMode}
+              yaw={yaw}
+              pitch={pitch}
+            />
+          ))}
         </div>
       </div>
     </div>
   );
-};
+});
+
+GameCanvas.displayName = 'GameCanvas';

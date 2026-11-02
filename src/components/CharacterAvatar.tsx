@@ -755,21 +755,26 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = React.memo(({
 
   return (
     <div
-      className={`relative inline-block select-none transition-transform duration-150 ${
-        isMoving ? 'animate-bounce' : ''
-      }`}
+      className="relative inline-block select-none pointer-events-none"
       style={{
         width: size,
         height: size,
         transform: isFacingLeft ? 'scaleX(-1)' : 'none',
       }}
     >
-      <svg
-        viewBox="0 0 64 64"
-        width={size}
-        height={size}
-        className="drop-shadow-lg overflow-visible"
+      <div
+        className={isMoving ? 'animate-walk-bob' : ''}
+        style={{
+          width: size,
+          height: size,
+        }}
       >
+        <svg
+          viewBox="0 0 64 64"
+          width={size}
+          height={size}
+          className="drop-shadow-lg overflow-visible"
+        >
         <defs>
           {/* Exact circular clipping boundary matching head cx=32 cy=25 r=14 */}
           <clipPath id="head-contour-clip">
@@ -853,7 +858,8 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = React.memo(({
             <path d="M 47 48 C 50 48 50 51 47 52" stroke="#b91c1c" strokeWidth="1" fill="none" />
           </g>
         )}
-      </svg>
+        </svg>
+      </div>
     </div>
   );
 });

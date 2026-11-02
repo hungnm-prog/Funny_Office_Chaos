@@ -131,6 +131,21 @@ body {
   animation: clickRipple 0.6s cubic-bezier(0, 0.2, 0.8, 1) forwards;
 }
 
+/* Gentle Walking Step Bob for Character */
+@keyframes walkBob {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-2.5px);
+  }
+}
+
+.animate-walk-bob {
+  animation: walkBob 0.3s ease-in-out infinite;
+  will-change: transform;
+}
+
 /* Water Ripple Animation in Pond */
 @keyframes pondFish {
   0% {
