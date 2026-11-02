@@ -5,7 +5,7 @@ import { WorkZone } from './OfficeZones/WorkZone';
 import { KitchenZone } from './OfficeZones/KitchenZone';
 import { RecreationZone } from './OfficeZones/RecreationZone';
 import { CharacterAvatar } from './CharacterAvatar';
-import { ZoomIn, ZoomOut, RotateCcw, MousePointerClick } from 'lucide-react';
+import { ZoomIn, ZoomOut, MousePointerClick, Compass } from 'lucide-react';
 
 interface GameCanvasProps {
   userCharacter: Character;
@@ -67,6 +67,62 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       });
     }
   }, []);
+
+  // Keyboard Movement (WASD and Arrow Keys) for real-time 2D game walking
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger walking if typing in an input or textarea
+      const activeEl = document.activeElement;
+      if (
+        activeEl &&
+        (activeEl.tagName === 'INPUT' ||
+          activeEl.tagName === 'TEXTAREA' ||
+          activeEl.getAttribute('contenteditable') === 'true')
+      ) {
+        return;
+      }
+
+      const step = e.shiftKey ? 36 : 22;
+      let dx = 0;
+      let dy = 0;
+
+      switch (e.key) {
+        case 'ArrowUp':
+        case 'w':
+        case 'W':
+          dy = -step;
+          break;
+        case 'ArrowDown':
+        case 's':
+        case 'S':
+          dy = step;
+          break;
+        case 'ArrowLeft':
+        case 'a':
+        case 'A':
+          dx = -step;
+          break;
+        case 'ArrowRight':
+        case 'd':
+        case 'D':
+          dx = step;
+          break;
+        default:
+          return;
+      }
+
+      e.preventDefault();
+      const currentX = userCharacter.position.x;
+      const currentY = userCharacter.position.y;
+      const nextX = Math.max(120, Math.min(MAP_WIDTH - 120, currentX + dx));
+      const nextY = Math.max(160, Math.min(MAP_HEIGHT - 120, currentY + dy));
+
+      onMoveUser(nextX, nextY);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [userCharacter.position.x, userCharacter.position.y, onMoveUser]);
 
   // Zoom handlers
   const handleZoom = useCallback((delta: number, clientX?: number, clientY?: number) => {
@@ -269,12 +325,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         isPanning ? 'cursor-grabbing' : 'cursor-grab'
       }`}
     >
-      {/* FLOATING ZOOM CONTROLS */}
-      <div className="fixed bottom-24 left-6 z-40 flex items-center gap-1.5 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 shadow-2xl rounded-2xl p-1.5 no-click-move">
+      {/* FLOATING ZOOM & VIEW CONTROLS */}
+      <div className="fixed bottom-24 left-6 z-40 flex items-center gap-1.5 bg-slate-900/95 backdrop-blur-md border border-slate-700/80 shadow-2xl rounded-2xl p-1.5 no-click-move">
         <button
           type="button"
           onClick={() => handleZoom(0.15)}
-          className="p-2 rounded-xl bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white transition-all active:scale-95 shadow"
+          className="p-2 rounded-xl bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white transition-all active:scale-95 shadow cursor-pointer"
           title="Phóng to (+)"
         >
           <ZoomIn className="w-4 h-4" />
@@ -287,7 +343,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         <button
           type="button"
           onClick={() => handleZoom(-0.15)}
-          className="p-2 rounded-xl bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white transition-all active:scale-95 shadow"
+          className="p-2 rounded-xl bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white transition-all active:scale-95 shadow cursor-pointer"
           title="Thu nhỏ (-)"
         >
           <ZoomOut className="w-4 h-4" />
@@ -306,20 +362,24 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
               });
             }
           }}
-          className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-all active:scale-95"
-          title="Đặt lại góc nhìn 100%"
+          className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-all active:scale-95 cursor-pointer"
+          title="Tái định vị nhân vật chính"
         >
-          <RotateCcw className="w-3.5 h-3.5" />
+          <Compass className="w-4 h-4" />
         </button>
       </div>
 
-      {/* CLICK TO MOVE HINT */}
-      <div className="fixed top-20 left-6 z-30 pointer-events-none hidden md:flex items-center gap-2 bg-slate-900/70 backdrop-blur-sm border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-400">
-        <MousePointerClick className="w-3.5 h-3.5 text-indigo-400" />
-        <span>Nhấp chuột để di chuyển • Nhấn giữ chuột và kéo để di chuyển bản đồ • Cuộn chuột để phóng to/thu nhỏ</span>
+      {/* GAME NAVIGATION GUIDE BADGE */}
+      <div className="fixed top-20 left-6 z-30 pointer-events-none hidden md:flex items-center gap-2 bg-slate-900/85 backdrop-blur-md border border-slate-700/80 rounded-xl px-3.5 py-1.5 text-xs text-slate-300 shadow-xl">
+        <MousePointerClick className="w-4 h-4 text-indigo-400 animate-pulse" />
+        <span>
+          <strong className="text-white">WASD / Phím Mũi Tên:</strong> Đi lại •{' '}
+          <strong className="text-white">Click Chuột:</strong> Di chuyển tới đích •{' '}
+          <strong className="text-white">Kéo Chuột:</strong> Di chuyển bản đồ
+        </span>
       </div>
 
-      {/* TRANSFORM CONTAINER FOR THE ENTIRE OFFICE WORLD */}
+      {/* TRANSFORM CONTAINER FOR THE ENTIRE 2D GAME OFFICE WORLD */}
       <div
         className="absolute origin-top-left transition-transform duration-75 ease-out will-change-transform"
         style={{
@@ -328,41 +388,107 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
         }}
       >
-        {/* OFFICE FLOOR */}
+        {/* MASTER 2D BUILDING FLOORPLAN */}
         <div
-          className="absolute inset-0 rounded-[48px] shadow-2xl border-8 border-slate-800 overflow-hidden"
+          className="absolute inset-0 rounded-[48px] shadow-2xl border-8 border-[#1e293b] overflow-hidden"
           style={{
-            background: `
-              radial-gradient(circle at 50% 50%, #1a2234 0%, #0d121f 100%)
-            `,
+            background: '#0d131f',
           }}
         >
-          {/* Subtle Tile Grid Flooring */}
+          {/* ========================================================= */}
+          {/* 1. OUTER PERIMETER BUILDING WALLS WITH WINDOWS */}
+          {/* ========================================================= */}
+          {/* North Exterior Wall with 2D Skylight Windows */}
+          <div className="absolute top-0 inset-x-0 h-16 bg-gradient-to-b from-[#0f172a] to-[#1e293b] border-b-4 border-[#334155] flex items-center justify-around px-16 shadow-lg z-20 pointer-events-none">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div
+                key={i}
+                className="w-40 h-9 rounded-t-lg bg-gradient-to-b from-sky-400/25 via-indigo-500/15 to-transparent border-2 border-sky-400/40 shadow-inner flex items-center justify-around px-2"
+              >
+                <div className="w-0.5 h-full bg-sky-300/30" />
+                <div className="w-0.5 h-full bg-sky-300/30" />
+                <div className="w-0.5 h-full bg-sky-300/30" />
+              </div>
+            ))}
+          </div>
+
+          {/* West & East Exterior Brick Walls */}
+          <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-[#020617] to-[#0f172a] border-r-4 border-[#334155] z-20 pointer-events-none" />
+          <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-[#020617] to-[#0f172a] border-l-4 border-[#334155] z-20 pointer-events-none" />
+          {/* South Exterior Wall */}
+          <div className="absolute bottom-0 inset-x-0 h-8 bg-gradient-to-t from-[#020617] to-[#0f172a] border-t-4 border-[#334155] z-20 pointer-events-none" />
+
+          {/* ========================================================= */}
+          {/* 2. GRAND CENTRAL CORRIDOR (ĐẠI LỘ HÀNH LANG CHÍNH) */}
+          {/* ========================================================= */}
+          {/* Hallway connects North to South from x=1140 to x=1280 */}
           <div
-            className="absolute inset-0 opacity-15"
+            className="absolute top-16 bottom-8 tile-floor-marble border-x-4 border-[#334155] shadow-2xl pointer-events-none"
             style={{
-              backgroundImage: `linear-gradient(#475569 1px, transparent 1px), linear-gradient(90deg, #475569 1px, transparent 1px)`,
-              backgroundSize: '40px 40px',
+              left: 1140,
+              width: 140,
             }}
-          />
+          >
+            {/* Grand Royal Red Carpet Runner with Gold Border down the Hallway Center */}
+            <div
+              className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-16 bg-[#831843] border-x-2 border-[#f59e0b] shadow-lg flex flex-col justify-around items-center"
+            >
+              {Array.from({ length: 14 }).map((_, i) => (
+                <div key={i} className="w-10 h-0.5 bg-[#f59e0b]/30" />
+              ))}
+            </div>
 
-          {/* Office Hallway Walkways */}
-          <div className="absolute top-0 bottom-0 left-[1200px] w-16 bg-slate-800/40 border-x border-slate-700/40 pointer-events-none" />
-          <div className="absolute left-0 right-0 top-[900px] h-16 bg-slate-800/40 border-y border-slate-700/40 pointer-events-none" />
+            {/* Potted Ficus Trees along the Hallway */}
+            <div className="absolute top-28 left-2 text-2xl filter drop-shadow">🪴</div>
+            <div className="absolute top-28 right-2 text-2xl filter drop-shadow">🪴</div>
+            <div className="absolute top-[480px] left-2 text-2xl filter drop-shadow">🪴</div>
+            <div className="absolute top-[480px] right-2 text-2xl filter drop-shadow">🪴</div>
+            <div className="absolute top-[900px] left-2 text-2xl filter drop-shadow">🪴</div>
+            <div className="absolute top-[900px] right-2 text-2xl filter drop-shadow">🪴</div>
+            <div className="absolute top-[1380px] left-2 text-2xl filter drop-shadow">🪴</div>
+            <div className="absolute top-[1380px] right-2 text-2xl filter drop-shadow">🪴</div>
 
-          {/* Office Welcome Reception Lobby */}
-          <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-slate-900/90 border border-slate-700 px-8 py-3 rounded-2xl shadow-xl flex items-center gap-4">
-            <span className="text-3xl">🏢</span>
-            <div>
-              <h2 className="text-lg font-black tracking-wider text-white">
-                CÔNG SỞ TRỰC TUYẾN 4.0
-              </h2>
-              <p className="text-[11px] text-indigo-300">
-                20 Chỗ Làm Việc • Căn Tin 3 Bàn (24 Ghế) • Hồ Cá Koi • Rạp Phim • Sòng Bài • Gaming Arcade
-              </p>
+            {/* Hallway Wayfinding Floor Direction Decals */}
+            <div className="absolute top-64 left-1/2 -translate-x-1/2 bg-slate-900/90 text-[9px] font-mono font-bold text-amber-300 px-2 py-0.5 rounded border border-amber-500/50 whitespace-nowrap shadow">
+              ⬅️ LÀM VIỆC • HỒ KOI ➡️
+            </div>
+            <div className="absolute top-[820px] left-1/2 -translate-x-1/2 bg-slate-900/90 text-[9px] font-mono font-bold text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/50 whitespace-nowrap shadow">
+              ⬅️ CĂN TIN • CASINO ➡️
             </div>
           </div>
 
+          {/* ========================================================= */}
+          {/* 3. 2D GRAND LOBBY & RECEPTION COUNTER (Top Center) */}
+          {/* ========================================================= */}
+          <div
+            className="absolute top-18 left-1/2 -translate-x-1/2 z-10 flex items-center gap-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border-2 border-indigo-500/70 px-8 py-2.5 rounded-2xl shadow-2xl pointer-events-none"
+          >
+            {/* Reception Oak Desk with Bell & Laptop */}
+            <div className="flex items-center gap-3">
+              <span className="text-3xl filter drop-shadow">🏢</span>
+              <div>
+                <h2 className="text-sm font-black tracking-widest text-white uppercase font-mono">
+                  FUNNY OFFICE CHAOS • 2D METAVERSE
+                </h2>
+                <p className="text-[10px] text-indigo-300 font-medium">
+                  20 Bàn Làm Việc • 3 Bàn Căn Tin (24 Ghế) • Hồ Cá Koi • Rạp Phim • Sòng Bài • Phòng Arcade
+                </p>
+              </div>
+            </div>
+
+            <div className="w-[1px] h-8 bg-indigo-500/40" />
+
+            {/* Reception Props */}
+            <div className="flex items-center gap-2 text-sm">
+              <span title="Chuông Tiếp Tân">🛎️</span>
+              <span title="Hoa Chào Mừng">💐</span>
+              <span title="Cà Phê Sáng">☕</span>
+            </div>
+          </div>
+
+          {/* ========================================================= */}
+          {/* 4. OFFICE ZONES */}
+          {/* ========================================================= */}
           {/* ZONE 1: WORK ZONE (20 Desks) */}
           <WorkZone onSeatClick={onSeatUser} occupiedSeats={occupiedSeats} />
 
@@ -376,7 +502,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             onTriggerEvent={onTriggerEvent}
           />
 
-          {/* CLICK RIPPLE BEACONS */}
+          {/* ========================================================= */}
+          {/* 5. CLICK RIPPLE BEACONS */}
+          {/* ========================================================= */}
           {ripples.map((rip) => (
             <div
               key={rip.id}
@@ -385,7 +513,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             />
           ))}
 
-          {/* CHARACTERS RENDERING (PLAYER + ALL COLLEAGUES) */}
+          {/* ========================================================= */}
+          {/* 6. CHARACTERS RENDERING (PLAYER + ALL MULTIPLAYER COLLEAGUES) */}
+          {/* ========================================================= */}
           {allCharacters.map((char) => {
             const isUser = char.id === userCharacter.id;
 
@@ -438,10 +568,11 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
                     </span>
                   </div>
 
+                  {/* Speech Bubble Arrow */}
                   <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[7px] border-t-slate-700 -mt-[1px]" />
                 </div>
 
-                {/* 2. CHARACTER AVATAR */}
+                {/* 2. 2D CHARACTER AVATAR */}
                 <div className="relative flex flex-col items-center">
                   {char.isSitting && (
                     <span className="absolute -top-3 px-1.5 py-0.2 rounded-full bg-indigo-900/90 border border-indigo-500 text-[9px] font-bold text-indigo-200 shadow z-30">
@@ -458,6 +589,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
                     size={58}
                   />
 
+                  {/* Character Nameplate */}
                   <div
                     className={`mt-1 px-2 py-0.5 rounded-full text-[10px] font-black tracking-wide flex items-center gap-1 shadow-md border ${
                       isUser

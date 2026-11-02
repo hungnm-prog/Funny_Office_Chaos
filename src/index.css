@@ -104,3 +104,102 @@ body {
 .cinema-glow {
   animation: screenGlow 4s infinite alternate;
 }
+
+/* 2D GAME FLOORS & TILEMAP PATTERNS */
+/* 1. Warm Office Parquet Wood Flooring */
+.tile-floor-wood {
+  background-color: #1f2735;
+  background-image: 
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(rgba(0, 0, 0, 0.25) 1px, transparent 1px),
+    linear-gradient(90deg, #283344 0%, #1e2634 50%, #283344 100%);
+  background-size: 64px 32px, 64px 32px, 64px 32px;
+}
+
+/* 2. Canteen Retro Checkered Tile Floor */
+.tile-floor-canteen {
+  background-color: #064e3b;
+  background-image: 
+    linear-gradient(45deg, #04382a 25%, transparent 25%),
+    linear-gradient(-45deg, #04382a 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #04382a 75%),
+    linear-gradient(-45deg, transparent 75%, #04382a 75%);
+  background-size: 40px 40px;
+  background-position: 0 0, 0 20px, 20px -20px, -20px 0px;
+}
+
+/* 3. Zen Cobblestone / Pebble Pavers */
+.tile-floor-stone {
+  background-color: #0f172a;
+  background-image: 
+    radial-gradient(circle at 50% 50%, #1e293b 40%, #0f172a 45%),
+    radial-gradient(circle at 0% 0%, #334155 25%, transparent 30%),
+    radial-gradient(circle at 100% 100%, #1e293b 25%, transparent 30%);
+  background-size: 32px 32px;
+}
+
+/* 4. Cinema Plush Velvet Carpet */
+.tile-floor-cinema {
+  background-color: #1a0f2e;
+  background-image: 
+    radial-gradient(circle, rgba(168, 85, 247, 0.12) 2px, transparent 2px),
+    linear-gradient(135deg, rgba(88, 28, 135, 0.4) 25%, transparent 25%),
+    linear-gradient(225deg, rgba(88, 28, 135, 0.4) 25%, transparent 25%);
+  background-size: 24px 24px, 24px 24px, 24px 24px;
+}
+
+/* 5. Casino Green Felt Carpet */
+.tile-floor-poker {
+  background-color: #064e3b;
+  background-image: 
+    radial-gradient(ellipse at 50% 50%, rgba(16, 185, 129, 0.08) 0%, transparent 70%),
+    linear-gradient(rgba(4, 120, 87, 0.25) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(4, 120, 87, 0.25) 1px, transparent 1px);
+  background-size: 100% 100%, 32px 32px, 32px 32px;
+}
+
+/* 6. Arcade Cyber Neon Grid Carpet */
+.tile-floor-arcade {
+  background-color: #0b071a;
+  background-image: 
+    linear-gradient(rgba(236, 72, 153, 0.2) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(6, 182, 212, 0.2) 1px, transparent 1px),
+    radial-gradient(circle, rgba(236, 72, 153, 0.1) 1px, transparent 1px);
+  background-size: 40px 40px, 40px 40px, 20px 20px;
+}
+
+/* 7. Hallway Marble Flooring */
+.tile-floor-marble {
+  background-color: #1e293b;
+  background-image: 
+    linear-gradient(45deg, rgba(255, 255, 255, 0.03) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255, 255, 255, 0.03) 25%, transparent 25%),
+    linear-gradient(90deg, #334155 1px, transparent 1px),
+    linear-gradient(#334155 1px, transparent 1px);
+  background-size: 48px 48px, 48px 48px, 48px 48px, 48px 48px;
+}
+
+/* Coffee / Food Steam Animation */
+@keyframes steamRise {
+  0% {
+    transform: translateY(0) scaleX(0.8);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translateY(-8px) scaleX(1.2);
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateY(-16px) scaleX(1.6);
+    opacity: 0;
+  }
+}
+
+.animate-steam {
+  animation: steamRise 2s infinite ease-out;
+}
+
+/* 2D Game Prop Dropshadow */
+.game-prop-shadow {
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45));
+}
