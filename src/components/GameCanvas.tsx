@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import type { Character, Seat, DimensionId } from '../types/game';
 import { MAP_WIDTH, MAP_HEIGHT, DIMENSIONS } from '../constants/officeLayout';
 import { WorkZone } from './OfficeZones/WorkZone';
@@ -66,6 +66,113 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const isMouseDownRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0, hasMoved: false });
   const [ripples, setRipples] = useState<ClickRipple[]>([]);
+  const panRafRef = useRef<number | null>(null);
+
+  const userPosRef = useRef(userCharacter.position);
+  userPosRef.current = userCharacter.position;
+
+  const onMoveUserRef = useRef(onMoveUser);
+  onMoveUserRef.current = onMoveUser;
+
+  // Smooth WASD & Arrow Key Continuous Movement Loop (60-120 FPS without OS repeating delay)
+  const keysPressedRef = useRef(new Set<string>());
+  const walkRafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const startWalkingLoop = () => {
+      if (walkRafRef.current) return;
+
+      const stepWalk = () => {
+        const keys = keysPressedRef.current;
+        if (keys.size === 0) {
+          walkRafRef.current = null;
+          return;
+        }
+
+        let dx = 0;
+        let dy = 0;
+        if (keys.has('arrowup') || keys.has('w')) dy -= 1;
+        if (keys.has('arrowdown') || keys.has('s')) dy += 1;
+        if (keys.has('arrowleft') || keys.has('a')) dx -= 1;
+        if (keys.has('arrowright') || keys.has('d')) dx += 1;
+
+        if (dx !== 0 || dy !== 0) {
+          const len = Math.hypot(dx, dy);
+          const isShift = keys.has('shift');
+          const speed = isShift ? 11 : 7;
+          const stepX = (dx / len) * speed;
+          const stepY = (dy / len) * speed;
+
+          const currentX = userPosRef.current.x;
+          const currentY = userPosRef.current.y;
+          const nextX = Math.max(120, Math.min(MAP_WIDTH - 120, currentX + stepX));
+          const nextY = Math.max(160, Math.min(MAP_HEIGHT - 120, currentY + stepY));
+
+          onMoveUserRef.current(nextX, nextY);
+        }
+
+        walkRafRef.current = requestAnimationFrame(stepWalk);
+      };
+
+      walkRafRef.current = requestAnimationFrame(stepWalk);
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      if (
+        activeEl &&
+        (activeEl.tagName === 'INPUT' ||
+          activeEl.tagName === 'TEXTAREA' ||
+          activeEl.getAttribute('contenteditable') === 'true')
+      ) {
+        return;
+      }
+
+      const key = e.key.toLowerCase();
+      if (
+        key === 'w' ||
+        key === 'a' ||
+        key === 's' ||
+        key === 'd' ||
+        key === 'arrowup' ||
+        key === 'arrowdown' ||
+        key === 'arrowleft' ||
+        key === 'arrowright' ||
+        key === 'shift'
+      ) {
+        e.preventDefault();
+        keysPressedRef.current.add(key);
+        startWalkingLoop();
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      keysPressedRef.current.delete(key);
+    };
+
+    const handleBlur = () => {
+      keysPressedRef.current.clear();
+      if (walkRafRef.current) {
+        cancelAnimationFrame(walkRafRef.current);
+        walkRafRef.current = null;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown, { passive: false });
+    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('blur', handleBlur);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('blur', handleBlur);
+      if (walkRafRef.current) {
+        cancelAnimationFrame(walkRafRef.current);
+        walkRafRef.current = null;
+      }
+    };
+  }, []);
 
   // Smoothly center on character on initial mount or when requested
   useEffect(() => {
@@ -92,62 +199,6 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       });
     }
   }, []);
-
-  // Keyboard Movement (WASD and Arrow Keys) for real-time walking
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger walking if typing in an input or textarea
-      const activeEl = document.activeElement;
-      if (
-        activeEl &&
-        (activeEl.tagName === 'INPUT' ||
-          activeEl.tagName === 'TEXTAREA' ||
-          activeEl.getAttribute('contenteditable') === 'true')
-      ) {
-        return;
-      }
-
-      const step = e.shiftKey ? 36 : 22;
-      let dx = 0;
-      let dy = 0;
-
-      switch (e.key) {
-        case 'ArrowUp':
-        case 'w':
-        case 'W':
-          dy = -step;
-          break;
-        case 'ArrowDown':
-        case 's':
-        case 'S':
-          dy = step;
-          break;
-        case 'ArrowLeft':
-        case 'a':
-        case 'A':
-          dx = -step;
-          break;
-        case 'ArrowRight':
-        case 'd':
-        case 'D':
-          dx = step;
-          break;
-        default:
-          return;
-      }
-
-      e.preventDefault();
-      const currentX = userCharacter.position.x;
-      const currentY = userCharacter.position.y;
-      const nextX = Math.max(120, Math.min(MAP_WIDTH - 120, currentX + dx));
-      const nextY = Math.max(160, Math.min(MAP_HEIGHT - 120, currentY + dy));
-
-      onMoveUser(nextX, nextY);
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [userCharacter.position.x, userCharacter.position.y, onMoveUser]);
 
   // Zoom handlers
   const handleZoom = useCallback((delta: number, clientX?: number, clientY?: number) => {
@@ -206,9 +257,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         dragStartRef.current.hasMoved = true;
         setIsPanning(true);
       }
-      setPan({
-        x: dragStartRef.current.panX + dx,
-        y: dragStartRef.current.panY + dy,
+      const targetPanX = dragStartRef.current.panX + dx;
+      const targetPanY = dragStartRef.current.panY + dy;
+
+      if (panRafRef.current) cancelAnimationFrame(panRafRef.current);
+      panRafRef.current = requestAnimationFrame(() => {
+        setPan({ x: targetPanX, y: targetPanY });
       });
     }
   };
@@ -216,6 +270,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const handleMouseUp = (e: React.MouseEvent) => {
     if (!isMouseDownRef.current) return;
     isMouseDownRef.current = false;
+    if (panRafRef.current) {
+      cancelAnimationFrame(panRafRef.current);
+      panRafRef.current = null;
+    }
 
     const wasDragging = dragStartRef.current.hasMoved;
     setIsPanning(false);
@@ -264,6 +322,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       isMouseDownRef.current = false;
       setIsPanning(false);
     }
+    if (panRafRef.current) {
+      cancelAnimationFrame(panRafRef.current);
+      panRafRef.current = null;
+    }
   };
 
   // Touch Pan & Tap to Move
@@ -297,9 +359,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         dragStartRef.current.hasMoved = true;
         setIsPanning(true);
       }
-      setPan({
-        x: dragStartRef.current.panX + dx,
-        y: dragStartRef.current.panY + dy,
+      const targetPanX = dragStartRef.current.panX + dx;
+      const targetPanY = dragStartRef.current.panY + dy;
+
+      if (panRafRef.current) cancelAnimationFrame(panRafRef.current);
+      panRafRef.current = requestAnimationFrame(() => {
+        setPan({ x: targetPanX, y: targetPanY });
       });
     }
   };
@@ -307,6 +372,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (!isMouseDownRef.current) return;
     isMouseDownRef.current = false;
+    if (panRafRef.current) {
+      cancelAnimationFrame(panRafRef.current);
+      panRafRef.current = null;
+    }
 
     const wasDragging = dragStartRef.current.hasMoved;
     setIsPanning(false);
@@ -334,20 +403,25 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     }
   };
 
-  // Occupied seats mapping
-  const occupiedSeats: Record<string, string> = {};
-  allCharacters.forEach((char) => {
-    if (char.isSitting && char.sittingSeatId) {
-      occupiedSeats[char.sittingSeatId] = char.name;
+  // Occupied seats mapping - memoized for zero overhead
+  const occupiedSeats = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const char of allCharacters) {
+      if (char.isSitting && char.sittingSeatId) {
+        map[char.sittingSeatId] = char.name;
+      }
     }
-  });
+    return map;
+  }, [allCharacters]);
 
-  // Filter visible characters by active dimension
-  const visibleCharacters = allCharacters.filter((char) => {
-    if (char.id === userCharacter.id) return true; // User is always in active dimension
-    const charDim = char.dimensionId || 'office';
-    return charDim === currentDimension;
-  });
+  // Filter visible characters by active dimension - memoized
+  const visibleCharacters = useMemo(() => {
+    return allCharacters.filter((char) => {
+      if (char.id === userCharacter.id) return true; // User is always in active dimension
+      const charDim = char.dimensionId || 'office';
+      return charDim === currentDimension;
+    });
+  }, [allCharacters, userCharacter.id, currentDimension]);
 
   return (
     <div
@@ -499,15 +573,18 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       {/* 2. MASTER 3D / 2D TRANSFORM CONTAINER FOR THE REALM */}
       {/* ========================================================= */}
       <div
-        className="absolute origin-top-left transition-transform duration-100 ease-out map-3d-surface"
+        className="absolute origin-top-left map-3d-surface"
         style={{
           width: MAP_WIDTH,
           height: MAP_HEIGHT,
           transform:
             viewMode === '3d'
-              ? `translate(${pan.x}px, ${pan.y}px) scale(${zoom}) rotateX(${pitch}deg) rotateZ(${yaw}deg)`
-              : `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+              ? `translate3d(${pan.x}px, ${pan.y}px, 0px) scale(${zoom}) rotateX(${pitch}deg) rotateZ(${yaw}deg)`
+              : `translate3d(${pan.x}px, ${pan.y}px, 0px) scale(${zoom})`,
           transformStyle: 'preserve-3d',
+          transition: isPanning ? 'none' : 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+          willChange: isPanning ? 'transform' : 'auto',
+          backfaceVisibility: 'hidden',
         }}
       >
         {/* ========================================================= */}
@@ -655,17 +732,19 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             return (
               <div
                 key={char.id}
-                className="absolute transition-all duration-100 ease-linear pointer-events-none"
+                className="absolute pointer-events-none"
                 style={{
                   left: char.position.x,
                   top: char.position.y,
                   transform:
                     viewMode === '3d'
-                      ? `translate(-50%, -75%) rotateZ(${-yaw}deg) rotateX(${-pitch}deg)`
-                      : 'translate(-50%, -75%)',
+                      ? `translate3d(-50%, -75%, 0px) rotateZ(${-yaw}deg) rotateX(${-pitch}deg)`
+                      : 'translate3d(-50%, -75%, 0px)',
                   transformOrigin: '50% 85%',
                   transformStyle: 'preserve-3d',
                   zIndex: Math.floor(char.position.y),
+                  transition: isUser ? 'none' : 'left 0.12s linear, top 0.12s linear',
+                  willChange: isUser ? 'left, top' : 'auto',
                 }}
               >
                 {/* 1. PERSISTENT CHAT BUBBLE ALWAYS VISIBLE ABOVE CHARACTER'S HEAD */}

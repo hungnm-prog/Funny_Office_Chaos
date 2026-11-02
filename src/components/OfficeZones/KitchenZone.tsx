@@ -8,7 +8,7 @@ interface KitchenZoneProps {
   occupiedSeats: Record<string, string>;
 }
 
-export const KitchenZone: React.FC<KitchenZoneProps> = ({ onSeatClick, occupiedSeats }) => {
+export const KitchenZone: React.FC<KitchenZoneProps> = React.memo(({ onSeatClick, occupiedSeats }) => {
   return (
     <div
       className="absolute tile-floor-canteen rounded-3xl border-4 border-emerald-800/80 shadow-2xl overflow-hidden select-none"
@@ -235,4 +235,6 @@ export const KitchenZone: React.FC<KitchenZoneProps> = ({ onSeatClick, occupiedS
       </div>
     </div>
   );
-};
+});
+
+KitchenZone.displayName = 'KitchenZone';

@@ -10,7 +10,7 @@ interface ZenIslandZoneProps {
   onTriggerEvent: (title: string, message: string) => void;
 }
 
-export const ZenIslandZone: React.FC<ZenIslandZoneProps> = ({
+export const ZenIslandZone: React.FC<ZenIslandZoneProps> = React.memo(({
   onSeatClick,
   occupiedSeats,
   onTriggerEvent,
@@ -264,4 +264,6 @@ export const ZenIslandZone: React.FC<ZenIslandZoneProps> = ({
       </div>
     </div>
   );
-};
+});
+
+ZenIslandZone.displayName = 'ZenIslandZone';

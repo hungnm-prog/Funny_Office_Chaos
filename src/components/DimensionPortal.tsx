@@ -9,7 +9,7 @@ interface DimensionPortalProps {
   onTeleport: (dimId: DimensionId) => void;
 }
 
-export const DimensionPortal: React.FC<DimensionPortalProps> = ({
+export const DimensionPortal: React.FC<DimensionPortalProps> = React.memo(({
   currentDimension,
   onTeleport,
 }) => {
@@ -92,4 +92,7 @@ export const DimensionPortal: React.FC<DimensionPortalProps> = ({
       </div>
     </div>
   );
-};
+});
+
+DimensionPortal.displayName = 'DimensionPortal';
+

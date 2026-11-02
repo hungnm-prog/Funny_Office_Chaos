@@ -10,7 +10,7 @@ interface RecreationZoneProps {
   onTriggerEvent: (title: string, message: string) => void;
 }
 
-export const RecreationZone: React.FC<RecreationZoneProps> = ({
+export const RecreationZone: React.FC<RecreationZoneProps> = React.memo(({
   onSeatClick,
   occupiedSeats,
   onTriggerEvent,
@@ -694,4 +694,6 @@ export const RecreationZone: React.FC<RecreationZoneProps> = ({
       </div>
     </>
   );
-};
+});
+
+RecreationZone.displayName = 'RecreationZone';

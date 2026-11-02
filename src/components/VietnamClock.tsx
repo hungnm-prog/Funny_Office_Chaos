@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Calendar, Sun, Moon, Coffee } from 'lucide-react';
 
-export const VietnamClock: React.FC = () => {
+export const VietnamClock: React.FC = React.memo(() => {
   const [timeData, setTimeData] = useState(() => getVietnamTime());
 
   function getVietnamTime() {
@@ -95,5 +95,7 @@ export const VietnamClock: React.FC = () => {
       </div>
     </div>
   );
-};
+});
+
+VietnamClock.displayName = 'VietnamClock';
 

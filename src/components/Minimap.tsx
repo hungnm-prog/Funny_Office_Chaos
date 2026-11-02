@@ -10,7 +10,7 @@ interface MinimapProps {
   viewportCenter: { x: number; y: number };
 }
 
-export const Minimap: React.FC<MinimapProps> = ({
+export const Minimap: React.FC<MinimapProps> = React.memo(({
   characters,
   userCharacter,
   onFocusLocation,
@@ -148,4 +148,6 @@ export const Minimap: React.FC<MinimapProps> = ({
       </div>
     </div>
   );
-};
+});
+
+Minimap.displayName = 'Minimap';

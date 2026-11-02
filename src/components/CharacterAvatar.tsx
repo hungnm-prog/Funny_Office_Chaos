@@ -10,7 +10,7 @@ interface CharacterAvatarProps {
   size?: number;
 }
 
-export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
+export const CharacterAvatar: React.FC<CharacterAvatarProps> = React.memo(({
   appearance,
   direction = 'down',
   isMoving = false,
@@ -856,4 +856,6 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
       </svg>
     </div>
   );
-};
+});
+
+CharacterAvatar.displayName = 'CharacterAvatar';

@@ -10,7 +10,7 @@ interface SkyLoungeZoneProps {
   onTriggerEvent: (title: string, message: string) => void;
 }
 
-export const SkyLoungeZone: React.FC<SkyLoungeZoneProps> = ({
+export const SkyLoungeZone: React.FC<SkyLoungeZoneProps> = React.memo(({
   onSeatClick,
   occupiedSeats,
   onTriggerEvent,
@@ -342,4 +342,7 @@ export const SkyLoungeZone: React.FC<SkyLoungeZoneProps> = ({
       </div>
     </div>
   );
-};
+});
+
+SkyLoungeZone.displayName = 'SkyLoungeZone';
+

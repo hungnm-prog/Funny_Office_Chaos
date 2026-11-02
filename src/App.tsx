@@ -49,6 +49,11 @@ export function App() {
   const [showExitModal, setShowExitModal] = useState(false);
   const [focusCoord, setFocusCoord] = useState<{ x: number; y: number } | null>(null);
 
+  const userCharRef = useRef<Character | null>(userCharacter);
+  userCharRef.current = userCharacter;
+  const currentDimRef = useRef(currentDimension);
+  currentDimRef.current = currentDimension;
+
   const channelRef = useRef<BroadcastChannel | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const animFrameRef = useRef<number | null>(null);
@@ -193,61 +198,66 @@ export function App() {
   }, [handleIncomingChatMessage]);
 
   // Dimension Warp / Teleport Handler
-  const handleTeleport = (dimId: DimensionId) => {
-    setCurrentDimension(dimId);
-    try {
-      localStorage.setItem(DIMENSION_KEY, dimId);
-    } catch {}
+  const handleTeleport = useCallback(
+    (dimId: DimensionId) => {
+      setCurrentDimension(dimId);
+      try {
+        localStorage.setItem(DIMENSION_KEY, dimId);
+      } catch {}
 
-    if (userCharacter) {
-      const targetConfig = DIMENSIONS.find((d) => d.id === dimId);
-      const spawnCoord = targetConfig?.defaultSpawn || { x: 1210, y: 520 };
+      const curChar = userCharRef.current;
+      if (curChar) {
+        const targetConfig = DIMENSIONS.find((d) => d.id === dimId);
+        const spawnCoord = targetConfig?.defaultSpawn || { x: 1210, y: 520 };
 
-      const updatedUser: Character = {
-        ...userCharacter,
-        dimensionId: dimId,
-        position: spawnCoord,
-        isMoving: false,
-        isSitting: false,
-        sittingSeatId: undefined,
-      };
-      setUserCharacter(updatedUser);
-      saveCharacterToStorage(updatedUser);
+        const updatedUser: Character = {
+          ...curChar,
+          dimensionId: dimId,
+          position: spawnCoord,
+          targetPosition: undefined,
+          isMoving: false,
+          isSitting: false,
+          sittingSeatId: undefined,
+        };
+        setUserCharacter(updatedUser);
+        saveCharacterToStorage(updatedUser);
 
-      const timeStr = new Date().toLocaleTimeString('vi-VN', {
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-      const warpMsg: ChatMessage = {
-        id: `warp-${Date.now()}`,
-        senderId: updatedUser.id,
-        senderName: updatedUser.name,
-        senderRole: updatedUser.role,
-        senderAppearance: updatedUser.appearance,
-        content: `Vừa bước qua Cổng Không Gian dịch chuyển đến: ${targetConfig?.name || dimId}! 🌌✨`,
-        timestamp: timeStr,
-        mentions: [],
-        isLong: false,
-        dimensionId: dimId,
-      };
-      handleIncomingChatMessage(warpMsg);
+        const timeStr = new Date().toLocaleTimeString('vi-VN', {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        const warpMsg: ChatMessage = {
+          id: `warp-${Date.now()}`,
+          senderId: updatedUser.id,
+          senderName: updatedUser.name,
+          senderRole: updatedUser.role,
+          senderAppearance: updatedUser.appearance,
+          content: `Vừa bước qua Cổng Không Gian dịch chuyển đến: ${targetConfig?.name || dimId}! 🌌✨`,
+          timestamp: timeStr,
+          mentions: [],
+          isLong: false,
+          dimensionId: dimId,
+        };
+        handleIncomingChatMessage(warpMsg);
 
-      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-        wsRef.current.send(
-          JSON.stringify({
-            type: 'PLAYER_MOVE',
-            data: {
-              position: updatedUser.position,
-              direction: updatedUser.direction,
-              isMoving: false,
-              isSitting: false,
-              dimensionId: dimId,
-            },
-          })
-        );
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(
+            JSON.stringify({
+              type: 'PLAYER_MOVE',
+              data: {
+                position: updatedUser.position,
+                direction: updatedUser.direction,
+                isMoving: false,
+                isSitting: false,
+                dimensionId: dimId,
+              },
+            })
+          );
+        }
       }
-    }
-  };
+    },
+    [handleIncomingChatMessage, saveCharacterToStorage]
+  );
 
   // Dispatch a new chat message from player
   const handleSendMessage = (content: string, mentions: string[]) => {
@@ -369,90 +379,106 @@ export function App() {
     return () => clearInterval(interval);
   }, [colleagues]);
 
-  // Smooth Movement interpolation loop
+  // Smooth Movement interpolation loop - decoupled from userCharacter state updates
+  const isMoving = userCharacter?.isMoving ?? false;
+  const targetX = userCharacter?.targetPosition?.x;
+  const targetY = userCharacter?.targetPosition?.y;
+
   useEffect(() => {
+    if (!isMoving || targetX === undefined || targetY === undefined) {
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current);
+        animFrameRef.current = null;
+      }
+      return;
+    }
+
     const updateMovement = () => {
-      if (userCharacter?.isMoving && userCharacter.targetPosition) {
-        const { x: curX, y: curY } = userCharacter.position;
-        const { x: tgtX, y: tgtY } = userCharacter.targetPosition;
+      const curChar = userCharRef.current;
+      if (!curChar || !curChar.targetPosition) return;
 
-        const dx = tgtX - curX;
-        const dy = tgtY - curY;
-        const dist = Math.hypot(dx, dy);
+      const { x: curX, y: curY } = curChar.position;
+      const { x: tgtX, y: tgtY } = curChar.targetPosition;
 
-        const speed = 7.5;
+      const dx = tgtX - curX;
+      const dy = tgtY - curY;
+      const dist = Math.hypot(dx, dy);
 
-        if (dist <= speed) {
-          const arrivedChar: Character = {
-            ...userCharacter,
-            position: { x: tgtX, y: tgtY },
-            targetPosition: undefined,
-            isMoving: false,
-          };
-          setUserCharacter(arrivedChar);
-          saveCharacterToStorage(arrivedChar);
+      const speed = 7.5;
 
-          // Notify WS
-          if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-            wsRef.current.send(
-              JSON.stringify({
-                type: 'PLAYER_MOVE',
-                data: {
-                  position: arrivedChar.position,
-                  direction: arrivedChar.direction,
-                  isMoving: false,
-                  isSitting: arrivedChar.isSitting,
-                  sittingSeatId: arrivedChar.sittingSeatId,
-                  currentAction: arrivedChar.currentAction,
-                  dimensionId: currentDimension,
-                },
-              })
-            );
-          }
-        } else {
-          const angle = Math.atan2(dy, dx);
-          const nextX = curX + Math.cos(angle) * speed;
-          const nextY = curY + Math.sin(angle) * speed;
+      if (dist <= speed) {
+        const arrivedChar: Character = {
+          ...curChar,
+          position: { x: tgtX, y: tgtY },
+          targetPosition: undefined,
+          isMoving: false,
+        };
+        setUserCharacter(arrivedChar);
+        saveCharacterToStorage(arrivedChar);
 
-          let dir: 'left' | 'right' | 'up' | 'down' = 'down';
-          if (Math.abs(dx) > Math.abs(dy)) {
-            dir = dx > 0 ? 'right' : 'left';
-          } else {
-            dir = dy > 0 ? 'down' : 'up';
-          }
-
-          setUserCharacter((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  position: { x: nextX, y: nextY },
-                  direction: dir,
-                  isMoving: true,
-                  isSitting: false,
-                  sittingSeatId: undefined,
-                }
-              : null
+        // Notify WS upon arrival
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(
+            JSON.stringify({
+              type: 'PLAYER_MOVE',
+              data: {
+                position: arrivedChar.position,
+                direction: arrivedChar.direction,
+                isMoving: false,
+                isSitting: arrivedChar.isSitting,
+                sittingSeatId: arrivedChar.sittingSeatId,
+                currentAction: arrivedChar.currentAction,
+                dimensionId: currentDimRef.current,
+              },
+            })
           );
         }
-      }
+        return; // Stop animation loop when arrived!
+      } else {
+        const angle = Math.atan2(dy, dx);
+        const nextX = curX + Math.cos(angle) * speed;
+        const nextY = curY + Math.sin(angle) * speed;
 
-      animFrameRef.current = requestAnimationFrame(updateMovement);
+        let dir: 'left' | 'right' | 'up' | 'down' = 'down';
+        if (Math.abs(dx) > Math.abs(dy)) {
+          dir = dx > 0 ? 'right' : 'left';
+        } else {
+          dir = dy > 0 ? 'down' : 'up';
+        }
+
+        setUserCharacter((prev) =>
+          prev
+            ? {
+                ...prev,
+                position: { x: nextX, y: nextY },
+                direction: dir,
+                isMoving: true,
+                isSitting: false,
+                sittingSeatId: undefined,
+              }
+            : null
+        );
+
+        animFrameRef.current = requestAnimationFrame(updateMovement);
+      }
     };
 
     animFrameRef.current = requestAnimationFrame(updateMovement);
     return () => {
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current);
+        animFrameRef.current = null;
+      }
     };
-  }, [userCharacter, saveCharacterToStorage, currentDimension]);
+  }, [isMoving, targetX, targetY, saveCharacterToStorage]);
 
-  // Move user on floor click
-  const handleMoveUser = (targetX: number, targetY: number) => {
-    if (!userCharacter) return;
+  // Move user on floor click or keypress
+  const handleMoveUser = useCallback((tX: number, tY: number) => {
     setUserCharacter((prev) =>
       prev
         ? {
             ...prev,
-            targetPosition: { x: targetX, y: targetY },
+            targetPosition: { x: tX, y: tY },
             isMoving: true,
             isSitting: false,
             sittingSeatId: undefined,
@@ -460,94 +486,112 @@ export function App() {
           }
         : null
     );
-  };
+  }, []);
 
   // Seat user on chair click
-  const handleSeatUser = (seat: Seat) => {
-    if (!userCharacter) return;
+  const handleSeatUser = useCallback(
+    (seat: Seat) => {
+      const curChar = userCharRef.current;
+      if (!curChar) return;
 
-    let action: any = 'working';
-    if (seat.type === 'dining') action = 'eating';
-    else if (seat.type === 'cinema') action = 'watching';
-    else if (seat.type === 'card') action = 'cards';
-    else if (seat.type === 'gaming') action = 'gaming';
-    else if (seat.type === 'fishing') action = 'fishing';
-    else if (seat.type === 'bar') action = 'drinking';
-    else if (seat.type === 'pool') action = 'swimming';
-    else if (seat.type === 'telescope') action = 'stargazing';
-    else if (seat.type === 'music') action = 'music';
-    else if (seat.type === 'quantum') action = 'quantum';
-    else if (seat.type === 'hack') action = 'hacking';
-    else if (seat.type === 'tea') action = 'tea';
-    else if (seat.type === 'zen' || seat.type === 'onsen') action = 'zen';
+      let action: any = 'working';
+      if (seat.type === 'dining') action = 'eating';
+      else if (seat.type === 'cinema') action = 'watching';
+      else if (seat.type === 'card') action = 'cards';
+      else if (seat.type === 'gaming') action = 'gaming';
+      else if (seat.type === 'fishing') action = 'fishing';
+      else if (seat.type === 'bar') action = 'drinking';
+      else if (seat.type === 'pool') action = 'swimming';
+      else if (seat.type === 'telescope') action = 'stargazing';
+      else if (seat.type === 'music') action = 'music';
+      else if (seat.type === 'quantum') action = 'quantum';
+      else if (seat.type === 'hack') action = 'hacking';
+      else if (seat.type === 'tea') action = 'tea';
+      else if (seat.type === 'zen' || seat.type === 'onsen') action = 'zen';
 
-    const seatedUser: Character = {
-      ...userCharacter,
-      position: { x: seat.x, y: seat.y },
-      targetPosition: undefined,
-      isMoving: false,
-      isSitting: true,
-      sittingSeatId: seat.id,
-      direction: seat.direction,
-      currentAction: action,
-      dimensionId: currentDimension,
-    };
+      const seatedUser: Character = {
+        ...curChar,
+        position: { x: seat.x, y: seat.y },
+        targetPosition: undefined,
+        isMoving: false,
+        isSitting: true,
+        sittingSeatId: seat.id,
+        direction: seat.direction,
+        currentAction: action,
+        dimensionId: currentDimRef.current,
+      };
 
-    setUserCharacter(seatedUser);
-    saveCharacterToStorage(seatedUser);
+      setUserCharacter(seatedUser);
+      saveCharacterToStorage(seatedUser);
 
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(
-        JSON.stringify({
-          type: 'PLAYER_MOVE',
-          data: {
-            position: seatedUser.position,
-            direction: seatedUser.direction,
-            isMoving: false,
-            isSitting: true,
-            sittingSeatId: seat.id,
-            currentAction: action,
-            dimensionId: currentDimension,
-          },
-        })
-      );
-    }
-  };
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(
+          JSON.stringify({
+            type: 'PLAYER_MOVE',
+            data: {
+              position: seatedUser.position,
+              direction: seatedUser.direction,
+              isMoving: false,
+              isSitting: true,
+              sittingSeatId: seat.id,
+              currentAction: action,
+              dimensionId: currentDimRef.current,
+            },
+          })
+        );
+      }
+    },
+    [saveCharacterToStorage]
+  );
 
   // Update Status
-  const handleUpdateStatus = (status: CharacterStatus) => {
-    if (!userCharacter) return;
-    const updated = { ...userCharacter, status };
-    setUserCharacter(updated);
-    saveCharacterToStorage(updated);
+  const handleUpdateStatus = useCallback(
+    (status: CharacterStatus) => {
+      const curChar = userCharRef.current;
+      if (!curChar) return;
+      const updated = { ...curChar, status };
+      setUserCharacter(updated);
+      saveCharacterToStorage(updated);
 
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(
-        JSON.stringify({
-          type: 'PLAYER_STATUS',
-          data: { status },
-        })
-      );
-    }
-  };
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(
+          JSON.stringify({
+            type: 'PLAYER_STATUS',
+            data: { status },
+          })
+        );
+      }
+    },
+    [saveCharacterToStorage]
+  );
 
   // Dismiss Toast
-  const handleDismissToast = (id: string) => {
+  const handleDismissToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
+  }, []);
 
   // Toggle Toast Expand
-  const handleToggleExpandToast = (id: string) => {
+  const handleToggleExpandToast = useCallback((id: string) => {
     setToasts((prev) =>
       prev.map((t) => (t.id === id ? { ...t, isExpanded: !t.isExpanded } : t))
     );
-  };
+  }, []);
+
+  // Clear focus coordinate
+  const handleClearFocus = useCallback(() => {
+    setFocusCoord(null);
+  }, []);
+
+  const handleFocusLocation = useCallback((x: number, y: number) => {
+    setFocusCoord({ x, y });
+  }, []);
 
   // Confirm Exit
-  const handleConfirmExit = () => {
-    if (userCharacter) {
+  const handleConfirmExit = useCallback(() => {
+    const curChar = userCharRef.current;
+    if (curChar) {
       const offlineChar: Character = {
-        ...userCharacter,
+        ...curChar,
         status: 'offline',
         isMoving: false,
       };
@@ -564,44 +608,48 @@ export function App() {
       }
     }
     setShowExitModal(false);
-  };
+  }, [saveCharacterToStorage]);
 
   // Trigger interactive in-game events
-  const handleTriggerEvent = (title: string, message: string) => {
-    if (!userCharacter) return;
-    const timeStr = new Date().toLocaleTimeString('vi-VN', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+  const handleTriggerEvent = useCallback(
+    (title: string, message: string) => {
+      const curChar = userCharRef.current;
+      if (!curChar) return;
+      const timeStr = new Date().toLocaleTimeString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
 
-    const isLong = message.length > 50;
-    const chatMsg: ChatMessage = {
-      id: `event-${Date.now()}`,
-      senderId: userCharacter.id,
-      senderName: `${userCharacter.name} (${title})`,
-      senderRole: 'Vũ Trụ Event',
-      senderAppearance: userCharacter.appearance,
-      content: message,
-      timestamp: timeStr,
-      mentions: [],
-      isLong,
-      dimensionId: currentDimension,
-    };
-    handleIncomingChatMessage(chatMsg);
+      const isLong = message.length > 50;
+      const chatMsg: ChatMessage = {
+        id: `event-${Date.now()}`,
+        senderId: curChar.id,
+        senderName: `${curChar.name} (${title})`,
+        senderRole: 'Vũ Trụ Event',
+        senderAppearance: curChar.appearance,
+        content: message,
+        timestamp: timeStr,
+        mentions: [],
+        isLong,
+        dimensionId: currentDimRef.current,
+      };
+      handleIncomingChatMessage(chatMsg);
 
-    setUserCharacter((prev) =>
-      prev ? { ...prev, lastMessage: message, lastMessageTime: timeStr } : null
-    );
-
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(
-        JSON.stringify({
-          type: 'NEW_CHAT',
-          data: chatMsg,
-        })
+      setUserCharacter((prev) =>
+        prev ? { ...prev, lastMessage: message, lastMessageTime: timeStr } : null
       );
-    }
-  };
+
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(
+          JSON.stringify({
+            type: 'NEW_CHAT',
+            data: chatMsg,
+          })
+        );
+      }
+    },
+    [handleIncomingChatMessage]
+  );
 
   const allCharacters = userCharacter ? [userCharacter, ...colleagues] : colleagues;
 
@@ -666,7 +714,7 @@ export function App() {
           onSeatUser={handleSeatUser}
           onTriggerEvent={handleTriggerEvent}
           focusCoord={focusCoord}
-          onClearFocus={() => setFocusCoord(null)}
+          onClearFocus={handleClearFocus}
         />
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-slate-400">
@@ -682,7 +730,7 @@ export function App() {
         <Minimap
           characters={allCharacters}
           userCharacter={userCharacter}
-          onFocusLocation={(x, y) => setFocusCoord({ x, y })}
+          onFocusLocation={handleFocusLocation}
           viewportCenter={userCharacter.position}
         />
       )}

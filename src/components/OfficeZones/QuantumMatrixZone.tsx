@@ -10,7 +10,7 @@ interface QuantumMatrixZoneProps {
   onTriggerEvent: (title: string, message: string) => void;
 }
 
-export const QuantumMatrixZone: React.FC<QuantumMatrixZoneProps> = ({
+export const QuantumMatrixZone: React.FC<QuantumMatrixZoneProps> = React.memo(({
   onSeatClick,
   occupiedSeats,
   onTriggerEvent,
@@ -248,4 +248,6 @@ export const QuantumMatrixZone: React.FC<QuantumMatrixZoneProps> = ({
       </div>
     </div>
   );
-};
+});
+
+QuantumMatrixZone.displayName = 'QuantumMatrixZone';

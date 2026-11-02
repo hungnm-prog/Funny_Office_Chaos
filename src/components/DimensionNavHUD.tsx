@@ -10,7 +10,7 @@ interface DimensionNavHUDProps {
   allCharacters: Character[];
 }
 
-export const DimensionNavHUD: React.FC<DimensionNavHUDProps> = ({
+export const DimensionNavHUD: React.FC<DimensionNavHUDProps> = React.memo(({
   currentDimension,
   onSelectDimension,
   allCharacters,
@@ -65,4 +65,7 @@ export const DimensionNavHUD: React.FC<DimensionNavHUDProps> = ({
       </div>
     </div>
   );
-};
+});
+
+DimensionNavHUD.displayName = 'DimensionNavHUD';
+

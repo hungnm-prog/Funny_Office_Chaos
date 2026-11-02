@@ -8,7 +8,7 @@ interface WorkZoneProps {
   occupiedSeats: Record<string, string>; // seatId -> characterName
 }
 
-export const WorkZone: React.FC<WorkZoneProps> = ({ onSeatClick, occupiedSeats }) => {
+export const WorkZone: React.FC<WorkZoneProps> = React.memo(({ onSeatClick, occupiedSeats }) => {
   return (
     <div
       className="absolute tile-floor-wood rounded-3xl border-4 border-slate-700/80 shadow-2xl overflow-hidden select-none"
@@ -290,4 +290,6 @@ export const WorkZone: React.FC<WorkZoneProps> = ({ onSeatClick, occupiedSeats }
       })}
     </div>
   );
-};
+});
+
+WorkZone.displayName = 'WorkZone';

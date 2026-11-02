@@ -47,11 +47,13 @@ body {
   perspective: 1600px;
   perspective-origin: 50% 50%;
   transform-style: preserve-3d;
+  contain: layout paint;
 }
 
 .map-3d-surface {
   transform-style: preserve-3d;
-  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 /* 3D Building Floating Slab Foundation (Extruded Thickness & Depth) */
@@ -156,18 +158,20 @@ body {
   animation: pondFish 11s ease-in-out infinite reverse;
 }
 
-/* Cinema flicker */
+/* Cinema flicker (GPU accelerated via opacity) */
 @keyframes screenGlow {
   0%, 100% {
-    box-shadow: 0 0 45px rgba(59, 130, 246, 0.45);
+    opacity: 0.75;
   }
   50% {
-    box-shadow: 0 0 75px rgba(168, 85, 247, 0.6);
+    opacity: 1;
   }
 }
 
 .cinema-glow {
+  box-shadow: 0 0 55px rgba(99, 102, 241, 0.55);
   animation: screenGlow 4s infinite alternate;
+  will-change: opacity;
 }
 
 /* 2D / 3D GAME FLOORS & TILEMAP PATTERNS */
