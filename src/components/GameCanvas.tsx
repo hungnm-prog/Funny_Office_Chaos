@@ -5,7 +5,16 @@ import { WorkZone } from './OfficeZones/WorkZone';
 import { KitchenZone } from './OfficeZones/KitchenZone';
 import { RecreationZone } from './OfficeZones/RecreationZone';
 import { CharacterAvatar } from './CharacterAvatar';
-import { ZoomIn, ZoomOut, MousePointerClick, Compass } from 'lucide-react';
+import {
+  ZoomIn,
+  ZoomOut,
+  MousePointerClick,
+  Compass,
+  Box,
+  Layers,
+  RotateCw,
+  RotateCcw,
+} from 'lucide-react';
 
 interface GameCanvasProps {
   userCharacter: Character;
@@ -33,6 +42,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   onClearFocus,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const floorRef = useRef<HTMLDivElement>(null);
+
+  // 3D Perspective & Modern View State (Default to Modern 3D Mode!)
+  const [viewMode, setViewMode] = useState<'3d' | '2d'>('3d');
+  const [pitch, setPitch] = useState(50); // Isometric elevation angle
+  const [yaw, setYaw] = useState(-28); // Isometric azimuth angle
 
   // Zoom & Pan State
   const [zoom, setZoom] = useState(0.85);
@@ -68,7 +83,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     }
   }, []);
 
-  // Keyboard Movement (WASD and Arrow Keys) for real-time 2D game walking
+  // Keyboard Movement (WASD and Arrow Keys) for real-time walking
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't trigger walking if typing in an input or textarea
@@ -152,8 +167,6 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   };
 
   // Mouse Pan & Click to Move
-  // Nhấn giữ chuột và kéo -> di chuyển bản đồ (Pan & Drag)
-  // Nhấp chuột ngắn (< 6px) -> di chuyển nhân vật (Click to Move)
   const handleMouseDown = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     if (target.closest('button') || target.closest('input') || target.closest('.no-click-move')) {
@@ -204,26 +217,37 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         return;
       }
 
-      if (containerRef.current) {
+      let worldX = userCharacter.position.x;
+      let worldY = userCharacter.position.y;
+
+      if (viewMode === '3d' && floorRef.current) {
+        // In 3D transformed surface, native offsets on floor element provide exact local coordinate
+        const floorRect = floorRef.current.getBoundingClientRect();
+        // Fallback approximation or native offset
+        const relX = (e.clientX - floorRect.left) / (floorRect.width / MAP_WIDTH);
+        const relY = (e.clientY - floorRect.top) / (floorRect.height / MAP_HEIGHT);
+        worldX = Math.max(120, Math.min(MAP_WIDTH - 120, relX));
+        worldY = Math.max(160, Math.min(MAP_HEIGHT - 120, relY));
+      } else if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
-        const worldX = (e.clientX - rect.left - pan.x) / zoom;
-        const worldY = (e.clientY - rect.top - pan.y) / zoom;
-
-        const boundedX = Math.max(120, Math.min(MAP_WIDTH - 120, worldX));
-        const boundedY = Math.max(160, Math.min(MAP_HEIGHT - 120, worldY));
-
-        const newRipple: ClickRipple = {
-          id: Date.now() + Math.random(),
-          x: boundedX,
-          y: boundedY,
-        };
-        setRipples((prev) => [...prev, newRipple]);
-        setTimeout(() => {
-          setRipples((prev) => prev.filter((r) => r.id !== newRipple.id));
-        }, 600);
-
-        onMoveUser(boundedX, boundedY);
+        worldX = (e.clientX - rect.left - pan.x) / zoom;
+        worldY = (e.clientY - rect.top - pan.y) / zoom;
       }
+
+      const boundedX = Math.max(120, Math.min(MAP_WIDTH - 120, worldX));
+      const boundedY = Math.max(160, Math.min(MAP_HEIGHT - 120, worldY));
+
+      const newRipple: ClickRipple = {
+        id: Date.now() + Math.random(),
+        x: boundedX,
+        y: boundedY,
+      };
+      setRipples((prev) => [...prev, newRipple]);
+      setTimeout(() => {
+        setRipples((prev) => prev.filter((r) => r.id !== newRipple.id));
+      }, 600);
+
+      onMoveUser(boundedX, boundedY);
     }
   };
 
@@ -321,84 +345,182 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onContextMenu={(e) => e.preventDefault()}
-      className={`relative w-full h-full overflow-hidden bg-[#090d16] select-none ${
+      className={`relative w-full h-full overflow-hidden cyber-space-void select-none scene-3d-container ${
         isPanning ? 'cursor-grabbing' : 'cursor-grab'
       }`}
     >
-      {/* FLOATING ZOOM & VIEW CONTROLS */}
-      <div className="fixed bottom-24 left-6 z-40 flex items-center gap-1.5 bg-slate-900/95 backdrop-blur-md border border-slate-700/80 shadow-2xl rounded-2xl p-1.5 no-click-move">
+      {/* ========================================================= */}
+      {/* 1. FLOATING MODERN 3D / 2D CONTROLS & CAMERA HUD */}
+      {/* ========================================================= */}
+      <div className="fixed bottom-24 left-6 z-40 flex items-center gap-2 no-click-move">
+        {/* Modern 3D / 2D Perspective Toggle Button */}
         <button
           type="button"
-          onClick={() => handleZoom(0.15)}
-          className="p-2 rounded-xl bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white transition-all active:scale-95 shadow cursor-pointer"
-          title="Phóng to (+)"
+          onClick={() => setViewMode((m) => (m === '3d' ? '2d' : '3d'))}
+          className={`flex items-center gap-2 px-3.5 py-2.5 rounded-2xl font-black text-xs shadow-2xl transition-all cursor-pointer border ${
+            viewMode === '3d'
+              ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white border-indigo-400 shadow-indigo-500/30 hover:scale-105 active:scale-95'
+              : 'bg-slate-900/90 text-slate-200 border-slate-700 hover:border-slate-500 hover:scale-105 active:scale-95'
+          }`}
+          title="Chuyển đổi góc nhìn 3D Hiện Đại hoặc 2D Mặt Bằng"
         >
-          <ZoomIn className="w-4 h-4" />
+          {viewMode === '3d' ? (
+            <>
+              <Box className="w-4 h-4 text-cyan-300 animate-pulse" />
+              <span>Góc Nhìn 3D Hiện Đại</span>
+            </>
+          ) : (
+            <>
+              <Layers className="w-4 h-4 text-emerald-300" />
+              <span>Góc Nhìn 2D Mặt Bằng</span>
+            </>
+          )}
         </button>
 
-        <span className="px-2 font-mono font-bold text-xs text-indigo-300 min-w-[50px] text-center">
-          {Math.round(zoom * 100)}%
-        </span>
+        {/* 3D Camera Controls Bar (Visible when in 3D Mode) */}
+        {viewMode === '3d' && (
+          <div className="flex items-center gap-1 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 shadow-2xl rounded-2xl p-1.5">
+            <button
+              type="button"
+              onClick={() => setYaw((y) => y - 15)}
+              className="p-2 rounded-xl bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white transition-all active:scale-95 shadow cursor-pointer"
+              title="Xoay Camera 3D Sang Trái (-15°)"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
 
-        <button
-          type="button"
-          onClick={() => handleZoom(-0.15)}
-          className="p-2 rounded-xl bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white transition-all active:scale-95 shadow cursor-pointer"
-          title="Thu nhỏ (-)"
-        >
-          <ZoomOut className="w-4 h-4" />
-        </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPitch(50);
+                setYaw(-28);
+              }}
+              className="px-2 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 font-mono text-[10px] font-bold transition-all active:scale-95 cursor-pointer"
+              title="Tái định vị Camera 3D về góc chuẩn"
+            >
+              3D ISO
+            </button>
 
-        <div className="w-[1px] h-5 bg-slate-700 mx-0.5" />
+            <button
+              type="button"
+              onClick={() => setYaw((y) => y + 15)}
+              className="p-2 rounded-xl bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white transition-all active:scale-95 shadow cursor-pointer"
+              title="Xoay Camera 3D Sang Phải (+15°)"
+            >
+              <RotateCw className="w-3.5 h-3.5" />
+            </button>
 
-        <button
-          type="button"
-          onClick={() => {
-            setZoom(0.85);
-            if (containerRef.current) {
-              setPan({
-                x: containerRef.current.clientWidth / 2 - userCharacter.position.x * 0.85,
-                y: containerRef.current.clientHeight / 2 - userCharacter.position.y * 0.85,
-              });
-            }
-          }}
-          className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-all active:scale-95 cursor-pointer"
-          title="Tái định vị nhân vật chính"
-        >
-          <Compass className="w-4 h-4" />
-        </button>
+            <div className="w-[1px] h-5 bg-slate-700 mx-0.5" />
+
+            <button
+              type="button"
+              onClick={() => setPitch((p) => (p === 50 ? 38 : p === 38 ? 62 : 50))}
+              className="px-2 py-1 rounded-xl bg-slate-800 hover:bg-indigo-600 text-slate-200 text-[10px] font-bold transition-all active:scale-95 cursor-pointer"
+              title="Đổi góc nghiêng 3D (38° / 50° / 62°)"
+            >
+              {pitch}°
+            </button>
+          </div>
+        )}
+
+        {/* Zoom Controls */}
+        <div className="flex items-center gap-1 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 shadow-2xl rounded-2xl p-1.5">
+          <button
+            type="button"
+            onClick={() => handleZoom(0.15)}
+            className="p-2 rounded-xl bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white transition-all active:scale-95 shadow cursor-pointer"
+            title="Phóng to (+)"
+          >
+            <ZoomIn className="w-4 h-4" />
+          </button>
+
+          <span className="px-2 font-mono font-bold text-xs text-indigo-300 min-w-[45px] text-center">
+            {Math.round(zoom * 100)}%
+          </span>
+
+          <button
+            type="button"
+            onClick={() => handleZoom(-0.15)}
+            className="p-2 rounded-xl bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white transition-all active:scale-95 shadow cursor-pointer"
+            title="Thu nhỏ (-)"
+          >
+            <ZoomOut className="w-4 h-4" />
+          </button>
+
+          <div className="w-[1px] h-5 bg-slate-700 mx-0.5" />
+
+          <button
+            type="button"
+            onClick={() => {
+              setZoom(0.85);
+              if (containerRef.current) {
+                setPan({
+                  x: containerRef.current.clientWidth / 2 - userCharacter.position.x * 0.85,
+                  y: containerRef.current.clientHeight / 2 - userCharacter.position.y * 0.85,
+                });
+              }
+            }}
+            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-all active:scale-95 cursor-pointer"
+            title="Tái định vị nhân vật chính"
+          >
+            <Compass className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* GAME NAVIGATION GUIDE BADGE */}
       <div className="fixed top-20 left-6 z-30 pointer-events-none hidden md:flex items-center gap-2 bg-slate-900/85 backdrop-blur-md border border-slate-700/80 rounded-xl px-3.5 py-1.5 text-xs text-slate-300 shadow-xl">
-        <MousePointerClick className="w-4 h-4 text-indigo-400 animate-pulse" />
+        <MousePointerClick className="w-4 h-4 text-cyan-400 animate-pulse" />
         <span>
-          <strong className="text-white">WASD / Phím Mũi Tên:</strong> Đi lại •{' '}
-          <strong className="text-white">Click Chuột:</strong> Di chuyển tới đích •{' '}
-          <strong className="text-white">Kéo Chuột:</strong> Di chuyển bản đồ
+          <strong className="text-white">WASD / Mũi Tên:</strong> Đi lại •{' '}
+          <strong className="text-white">Click:</strong> Di chuyển •{' '}
+          <strong className="text-white">Kéo Chuột:</strong> Lia bản đồ •{' '}
+          <span className="text-indigo-300 font-bold">Chế độ 3D Không Gian Đang Bật</span>
         </span>
       </div>
 
-      {/* TRANSFORM CONTAINER FOR THE ENTIRE 2D GAME OFFICE WORLD */}
+      {/* ========================================================= */}
+      {/* 2. MASTER 3D / 2D TRANSFORM CONTAINER FOR THE OFFICE */}
+      {/* ========================================================= */}
       <div
-        className="absolute origin-top-left transition-transform duration-75 ease-out will-change-transform"
+        className="absolute origin-top-left transition-transform duration-100 ease-out map-3d-surface"
         style={{
           width: MAP_WIDTH,
           height: MAP_HEIGHT,
-          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+          transform:
+            viewMode === '3d'
+              ? `translate(${pan.x}px, ${pan.y}px) scale(${zoom}) rotateX(${pitch}deg) rotateZ(${yaw}deg)`
+              : `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+          transformStyle: 'preserve-3d',
         }}
       >
-        {/* MASTER 2D BUILDING FLOORPLAN */}
+        {/* ========================================================= */}
+        {/* 3D EXTRUDED FOUNDATION SLAB (Gives true 3D thickness) */}
+        {/* ========================================================= */}
+        {viewMode === '3d' && (
+          <div
+            className="absolute inset-0 rounded-[56px] pointer-events-none"
+            style={{
+              transform: 'translateZ(-28px)',
+              background: 'linear-gradient(180deg, #090e17 0%, #030712 100%)',
+              border: '10px solid #1e293b',
+              boxShadow: '0 45px 95px rgba(0, 0, 0, 0.95), 0 0 50px rgba(99, 102, 241, 0.2)',
+            }}
+          />
+        )}
+
+        {/* 3D FLOATING BUILDING FLOOR SURFACE */}
         <div
-          className="absolute inset-0 rounded-[48px] shadow-2xl border-8 border-[#1e293b] overflow-hidden"
+          ref={floorRef}
+          className="absolute inset-0 rounded-[48px] shadow-2xl border-8 border-[#1e293b] slab-3d-base overflow-hidden"
           style={{
             background: '#0d131f',
+            transformStyle: 'preserve-3d',
           }}
         >
           {/* ========================================================= */}
-          {/* 1. OUTER PERIMETER BUILDING WALLS WITH WINDOWS */}
+          {/* OUTER PERIMETER BUILDING WALLS WITH WINDOWS */}
           {/* ========================================================= */}
-          {/* North Exterior Wall with 2D Skylight Windows */}
           <div className="absolute top-0 inset-x-0 h-16 bg-gradient-to-b from-[#0f172a] to-[#1e293b] border-b-4 border-[#334155] flex items-center justify-around px-16 shadow-lg z-20 pointer-events-none">
             {Array.from({ length: 8 }).map((_, i) => (
               <div
@@ -419,9 +541,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           <div className="absolute bottom-0 inset-x-0 h-8 bg-gradient-to-t from-[#020617] to-[#0f172a] border-t-4 border-[#334155] z-20 pointer-events-none" />
 
           {/* ========================================================= */}
-          {/* 2. GRAND CENTRAL CORRIDOR (ĐẠI LỘ HÀNH LANG CHÍNH) */}
+          {/* GRAND CENTRAL CORRIDOR (ĐẠI LỘ HÀNH LANG CHÍNH) */}
           {/* ========================================================= */}
-          {/* Hallway connects North to South from x=1140 to x=1280 */}
           <div
             className="absolute top-16 bottom-8 tile-floor-marble border-x-4 border-[#334155] shadow-2xl pointer-events-none"
             style={{
@@ -429,10 +550,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
               width: 140,
             }}
           >
-            {/* Grand Royal Red Carpet Runner with Gold Border down the Hallway Center */}
-            <div
-              className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-16 bg-[#831843] border-x-2 border-[#f59e0b] shadow-lg flex flex-col justify-around items-center"
-            >
+            {/* Grand Royal Red Carpet Runner with Gold Border */}
+            <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-16 bg-[#831843] border-x-2 border-[#f59e0b] shadow-lg flex flex-col justify-around items-center">
               {Array.from({ length: 14 }).map((_, i) => (
                 <div key={i} className="w-10 h-0.5 bg-[#f59e0b]/30" />
               ))}
@@ -458,17 +577,14 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           </div>
 
           {/* ========================================================= */}
-          {/* 3. 2D GRAND LOBBY & RECEPTION COUNTER (Top Center) */}
+          {/* GRAND 3D LOBBY & RECEPTION COUNTER (Top Center) */}
           {/* ========================================================= */}
-          <div
-            className="absolute top-18 left-1/2 -translate-x-1/2 z-10 flex items-center gap-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border-2 border-indigo-500/70 px-8 py-2.5 rounded-2xl shadow-2xl pointer-events-none"
-          >
-            {/* Reception Oak Desk with Bell & Laptop */}
+          <div className="absolute top-18 left-1/2 -translate-x-1/2 z-10 flex items-center gap-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border-2 border-indigo-500/70 px-8 py-2.5 rounded-2xl shadow-2xl pointer-events-none">
             <div className="flex items-center gap-3">
               <span className="text-3xl filter drop-shadow">🏢</span>
               <div>
                 <h2 className="text-sm font-black tracking-widest text-white uppercase font-mono">
-                  FUNNY OFFICE CHAOS • 2D METAVERSE
+                  FUNNY OFFICE CHAOS • 3D METAVERSE
                 </h2>
                 <p className="text-[10px] text-indigo-300 font-medium">
                   20 Bàn Làm Việc • 3 Bàn Căn Tin (24 Ghế) • Hồ Cá Koi • Rạp Phim • Sòng Bài • Phòng Arcade
@@ -478,7 +594,6 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
             <div className="w-[1px] h-8 bg-indigo-500/40" />
 
-            {/* Reception Props */}
             <div className="flex items-center gap-2 text-sm">
               <span title="Chuông Tiếp Tân">🛎️</span>
               <span title="Hoa Chào Mừng">💐</span>
@@ -487,7 +602,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           </div>
 
           {/* ========================================================= */}
-          {/* 4. OFFICE ZONES */}
+          {/* OFFICE ZONES */}
           {/* ========================================================= */}
           {/* ZONE 1: WORK ZONE (20 Desks) */}
           <WorkZone onSeatClick={onSeatUser} occupiedSeats={occupiedSeats} />
@@ -503,7 +618,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           />
 
           {/* ========================================================= */}
-          {/* 5. CLICK RIPPLE BEACONS */}
+          {/* CLICK RIPPLE BEACONS */}
           {/* ========================================================= */}
           {ripples.map((rip) => (
             <div
@@ -514,7 +629,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           ))}
 
           {/* ========================================================= */}
-          {/* 6. CHARACTERS RENDERING (PLAYER + ALL MULTIPLAYER COLLEAGUES) */}
+          {/* CHARACTERS RENDERING (WITH 3D BILLBOARDING) */}
           {/* ========================================================= */}
           {allCharacters.map((char) => {
             const isUser = char.id === userCharacter.id;
@@ -526,7 +641,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
                 style={{
                   left: char.position.x,
                   top: char.position.y,
-                  transform: 'translate(-50%, -75%)',
+                  transform:
+                    viewMode === '3d'
+                      ? `translate(-50%, -75%) rotateZ(${-yaw}deg) rotateX(${-pitch}deg)`
+                      : 'translate(-50%, -75%)',
+                  transformOrigin: '50% 85%',
+                  transformStyle: 'preserve-3d',
                   zIndex: Math.floor(char.position.y),
                 }}
               >
@@ -572,7 +692,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
                   <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[7px] border-t-slate-700 -mt-[1px]" />
                 </div>
 
-                {/* 2. 2D CHARACTER AVATAR */}
+                {/* 2. CHARACTER AVATAR STANDING IN 3D */}
                 <div className="relative flex flex-col items-center">
                   {char.isSitting && (
                     <span className="absolute -top-3 px-1.5 py-0.2 rounded-full bg-indigo-900/90 border border-indigo-500 text-[9px] font-bold text-indigo-200 shadow z-30">

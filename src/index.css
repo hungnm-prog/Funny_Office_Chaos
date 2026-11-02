@@ -10,7 +10,7 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  background-color: #0b0f19;
+  background-color: #05070e;
   font-family: 'Nunito', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   user-select: none;
   -webkit-user-select: none;
@@ -40,6 +40,38 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(99, 102, 241, 0.8);
+}
+
+/* 3D SCENE & PERSPECTIVE STYLES */
+.scene-3d-container {
+  perspective: 1600px;
+  perspective-origin: 50% 50%;
+  transform-style: preserve-3d;
+}
+
+.map-3d-surface {
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+/* 3D Building Floating Slab Foundation (Extruded Thickness & Depth) */
+.slab-3d-base {
+  box-shadow: 
+    0 40px 90px rgba(0, 0, 0, 0.88),
+    0 15px 35px rgba(0, 0, 0, 0.65),
+    0 0 40px rgba(56, 189, 248, 0.15);
+  transform: translateZ(0px);
+}
+
+/* Cyber Space Ambient Grid Void Background */
+.cyber-space-void {
+  background-color: #030712;
+  background-image: 
+    radial-gradient(circle at 50% 40%, rgba(99, 102, 241, 0.12) 0%, transparent 60%),
+    radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.08) 0%, transparent 50%),
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 60px 60px, 60px 60px;
 }
 
 /* Ripple animation for click move */
@@ -105,7 +137,7 @@ body {
   animation: screenGlow 4s infinite alternate;
 }
 
-/* 2D GAME FLOORS & TILEMAP PATTERNS */
+/* 2D / 3D GAME FLOORS & TILEMAP PATTERNS */
 /* 1. Warm Office Parquet Wood Flooring */
 .tile-floor-wood {
   background-color: #1f2735;
@@ -199,7 +231,16 @@ body {
   animation: steamRise 2s infinite ease-out;
 }
 
-/* 2D Game Prop Dropshadow */
+/* 3D Glassmorphism Card Style */
+.glass-modern-hud {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+/* Game Prop Dropshadow */
 .game-prop-shadow {
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45));
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.55));
 }
