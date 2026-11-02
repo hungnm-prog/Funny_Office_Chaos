@@ -9,7 +9,7 @@ export interface CharacterAppearance {
   outfitColor: string;
   outfitStyle: 'suit' | 'hoodie' | 'shirt' | 'casual' | 'dress';
   eyeColor: string;
-  accessory?: 'none' | 'glasses' | 'headphones' | 'badge';
+  accessory?: 'none' | 'glasses' | 'headphones' | 'cap' | 'beanie' | 'headband' | 'badge';
 }
 
 export interface Character {

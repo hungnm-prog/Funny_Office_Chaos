@@ -8,8 +8,8 @@ export const INITIAL_COLLEAGUES: Character[] = [
     role: 'Tech Lead',
     appearance: {
       gender: 'male',
-      hairColor: '#1e293b',
-      hairStyle: 'male_sidepart',
+      hairColor: '#0f172a',
+      hairStyle: 'sidepart7_3',
       skinColor: '#fde047',
       outfitColor: '#2563eb',
       outfitStyle: 'suit',
@@ -61,7 +61,7 @@ export const INITIAL_COLLEAGUES: Character[] = [
     appearance: {
       gender: 'male',
       hairColor: '#451a03',
-      hairStyle: 'male_quiff',
+      hairStyle: 'short_quiff',
       skinColor: '#fde047',
       outfitColor: '#059669',
       outfitStyle: 'shirt',
@@ -113,7 +113,7 @@ export const INITIAL_COLLEAGUES: Character[] = [
     appearance: {
       gender: 'male',
       hairColor: '#0f172a',
-      hairStyle: 'male_layer',
+      hairStyle: 'layer',
       skinColor: '#fed7aa',
       outfitColor: '#ea580c',
       outfitStyle: 'hoodie',
@@ -165,12 +165,12 @@ export const INITIAL_COLLEAGUES: Character[] = [
     appearance: {
       gender: 'male',
       hairColor: '#334155',
-      hairStyle: 'male_sidepart',
+      hairStyle: 'undercut',
       skinColor: '#fde047',
       outfitColor: '#16a34a',
       outfitStyle: 'casual',
       eyeColor: '#0f172a',
-      accessory: 'glasses',
+      accessory: 'cap',
     },
     status: 'online',
     position: { x: 1420, y: 380 }, // Cần câu 1
@@ -243,12 +243,12 @@ export const INITIAL_COLLEAGUES: Character[] = [
     appearance: {
       gender: 'male',
       hairColor: '#059669',
-      hairStyle: 'male_spiky',
+      hairStyle: 'buzz_cut',
       skinColor: '#fde047',
       outfitColor: '#ca8a04',
       outfitStyle: 'hoodie',
       eyeColor: '#0f172a',
-      accessory: 'headphones',
+      accessory: 'headband',
     },
     status: 'online',
     position: { x: 1990, y: 1140 }, // Máy Arcade 1

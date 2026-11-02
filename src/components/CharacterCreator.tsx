@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { Character, CharacterAppearance, Gender } from '../types/game';
 import { CharacterAvatar } from './CharacterAvatar';
-import { Sparkles, Dice5, User, Check, Palette, Eye, Shirt } from 'lucide-react';
+import { Sparkles, Dice5, User, Check, Palette, Eye, Shirt, HardHat } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface CharacterCreatorProps {
@@ -56,15 +56,16 @@ const EYE_COLORS = [
   { name: 'Đỏ Ruby Quý Phái', color: '#be123c' },
 ];
 
-// Kiểu tóc nam bao phủ kín vòm đầu cực đẹp
+// CHÍNH XÁC 5 KIỂU TÓC NAM THEO YÊU CẦU: Sidepart 7/3, Undercut, Layer, Short Quiff, Buzz Cut
 const MALE_HAIR_STYLES = [
-  { id: 'male_sidepart', label: '7/3 Rẽ Ngôi Hàn Quốc', desc: 'Mái dấu phẩy lãng tử, phồng dày ôm trọn đỉnh đầu' },
-  { id: 'male_layer', label: 'Tóc Layer Two-Block', desc: 'Mái bay phủ trán, bồng bềnh chuẩn soái ca' },
-  { id: 'male_quiff', label: 'Quiff Vuốt Phồng', desc: 'Lịch lãm sang trọng, vuốt phồng cao cấp' },
-  { id: 'male_spiky', label: 'Spiky Cá Tính', desc: 'Gai nhọn textured hiện đại, nam tính mạnh mẽ' },
+  { id: 'sidepart7_3', label: 'Sidepart 7/3', desc: 'Rẽ ngôi 7/3 lãng tử, mái dấu phẩy bồng bềnh ôm trọn đỉnh đầu' },
+  { id: 'undercut', label: 'Undercut', desc: 'Hai bên cạo fade gọn gàng, đỉnh đầu vuốt phồng textured hiện đại' },
+  { id: 'layer', label: 'Layer', desc: 'Tóc tỉa layer bồng bềnh phủ kín trán chuẩn soái ca Hàn Quốc' },
+  { id: 'short_quiff', label: 'Short Quiff', desc: 'Vuốt dựng phồng cao cấp, viền sắc nét, trẻ trung năng động' },
+  { id: 'buzz_cut', label: 'Buzz Cut', desc: 'Đầu đinh cua ôm sát viền sọ, đường chân tóc vuông vắn sắc nét' },
 ];
 
-// Kiểu tóc nữ bao phủ kín đầu óng ả
+// Kiểu tóc nữ bao phủ kín đầu
 const FEMALE_HAIR_STYLES = [
   { id: 'female_wavy', label: 'Tóc Dài Uốn Sóng Nước', desc: 'Bồng bềnh quyến rũ, mái thưa Hàn Quốc ngọt ngào' },
   { id: 'female_straight', label: 'Tóc Dài Suôn Mượt', desc: 'Mái bằng hime, suôn dài óng ả qua vai' },
@@ -89,11 +90,14 @@ const FEMALE_OUTFIT_STYLES = [
   { id: 'hoodie', label: 'Hoodie Dễ Thương' },
 ] as const;
 
+// PHỤ KIỆN BAO PHỦ ĐẦU
 const ACCESSORIES = [
-  { id: 'none', label: 'Không Có' },
-  { id: 'glasses', label: 'Kính Mắt Trí Thức' },
-  { id: 'headphones', label: 'Tai Nghe Chống Ồn' },
-  { id: 'badge', label: 'Thẻ Nhân Viên' },
+  { id: 'none', label: 'Không Có Phụ Kiện', desc: 'Hiển thị mái tóc trọn vẹn không che' },
+  { id: 'cap', label: 'Mũ Lưỡi Trai (Bao Phủ Đầu)', desc: 'Mũ lưỡi trai snapback trẻ trung ôm trọn vòm đầu' },
+  { id: 'beanie', label: 'Mũ Len Beanie (Bao Phủ Đầu)', desc: 'Mũ len ấm áp kéo phủ trùm kín đầu và trán' },
+  { id: 'headphones', label: 'Tai Nghe Chụp Tai Gaming (Bao Phủ Đầu)', desc: 'Quai tai nghe đệm lớn vòng ôm trọn vòm đầu' },
+  { id: 'headband', label: 'Băng Đô Thể Thao (Bao Đầu)', desc: 'Băng đô thể thao quấn quanh trán và thái dương' },
+  { id: 'glasses', label: 'Kính Mắt Trí Thức', desc: 'Kính mắt gọng vuông phong thái trí thức' },
 ] as const;
 
 const MALE_NAMES = [
@@ -127,26 +131,30 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
     initialCharacter?.appearance || {
       gender: 'male',
       hairColor: '#0f172a',
-      hairStyle: 'male_sidepart',
+      hairStyle: 'sidepart7_3',
       skinColor: '#fed7aa',
       outfitColor: '#2563eb',
       outfitStyle: 'suit',
       eyeColor: '#0f172a',
-      accessory: 'glasses',
+      accessory: 'none',
     }
   );
 
   const [activeTab, setActiveTab] = useState<'gender' | 'hair' | 'skin' | 'outfit' | 'eyes' | 'style'>('gender');
 
-  // Handle switching gender
+  // Switch gender
   const handleGenderChange = (newGender: Gender) => {
     setGender(newGender);
-    const newHairStyle = newGender === 'male' ? 'male_sidepart' : 'female_wavy';
+    const newHairStyle = newGender === 'male' ? 'sidepart7_3' : 'female_wavy';
     const newOutfitStyle = newGender === 'male' ? 'suit' : 'dress';
     const newOutfitColor = newGender === 'male' ? '#2563eb' : '#db2777';
 
-    // Suggest appropriate default name if user hasn't typed a custom one
-    if (MALE_NAMES.includes(name) || FEMALE_NAMES.includes(name) || name === 'Nguyễn Minh Quân' || name === 'Nguyễn Thùy Linh') {
+    if (
+      MALE_NAMES.includes(name) ||
+      FEMALE_NAMES.includes(name) ||
+      name === 'Nguyễn Minh Quân' ||
+      name === 'Nguyễn Thùy Linh'
+    ) {
       setName(newGender === 'male' ? 'Nguyễn Minh Quân' : 'Nguyễn Thùy Linh');
     }
 
@@ -242,7 +250,7 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
                 {isEditing ? 'Chỉnh Sửa Nhân Vật' : 'Tạo Hình Nhân Vật Công Sở'}
               </h2>
               <p className="text-xs text-slate-400">
-                Lựa chọn giới tính Nam / Nữ và kiểu tóc bao phủ đầu bồng bềnh theo phong cách riêng
+                Lựa chọn giới tính Nam / Nữ, 5 kiểu tóc nam thời thượng và phụ kiện bao phủ đầu
               </p>
             </div>
           </div>
@@ -340,7 +348,7 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
                 { id: 'skin', label: '3. Màu Da', icon: User },
                 { id: 'outfit', label: '4. Bộ Đồ', icon: Shirt },
                 { id: 'eyes', label: '5. Đôi Mắt', icon: Eye },
-                { id: 'style', label: '6. Phụ Kiện', icon: Sparkles },
+                { id: 'style', label: '6. Phụ Kiện', icon: HardHat },
               ].map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -364,7 +372,7 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
 
             {/* Tab Panels */}
             <div className="min-h-[270px]">
-              {/* TAB: GENDER SELECTION */}
+              {/* TAB 1: GENDER */}
               {activeTab === 'gender' && (
                 <div className="space-y-6">
                   <div>
@@ -372,7 +380,7 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
                       Chọn Giới Tính Cho Nhân Vật
                     </h4>
                     <p className="text-xs text-slate-400 mb-4">
-                      Giới tính sẽ quyết định bộ sưu tập kiểu tóc bao phủ đầu, tỉ lệ vóc dáng và trang phục phù hợp nhất.
+                      Lựa chọn giới tính để hiển thị danh mục 5 kiểu tóc nam (Sidepart 7/3, Undercut, Layer, Short Quiff, Buzz Cut) hoặc bộ sưu tập tóc nữ bồng bềnh.
                     </p>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -392,7 +400,7 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
                           <span className="text-blue-400 text-sm">♂️</span>
                         </div>
                         <p className="text-xs text-slate-400 mt-1">
-                          Tóc Side-part, Layer Hàn Quốc, Vest nam lịch lãm, phong độ
+                          5 kiểu tóc chuẩn men: Sidepart 7/3, Undercut, Layer, Short Quiff, Buzz Cut
                         </p>
                         {gender === 'male' && (
                           <span className="mt-3 px-3 py-0.5 rounded-full bg-blue-600 text-white text-[11px] font-bold flex items-center gap-1">
@@ -427,22 +435,21 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
                       </button>
                     </div>
                   </div>
-
-                  <div className="p-3 bg-slate-900/80 rounded-xl border border-slate-800 text-xs text-indigo-300 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
-                    <span>Sau khi chọn giới tính, chuyển sang tab <strong>Tóc & Màu Tóc</strong> để chọn các kiểu tóc thời thượng nhất!</span>
-                  </div>
                 </div>
               )}
 
-              {/* TAB: HAIR & HAIR COLOR */}
+              {/* TAB 2: HAIR & HAIR COLOR */}
               {activeTab === 'hair' && (
                 <div className="space-y-5">
                   {/* Hair Style Options */}
                   <div>
                     <h4 className="text-sm font-bold text-slate-200 mb-2.5 flex items-center justify-between">
-                      <span>Kiểu Tóc Bao Phủ Đầu ({gender === 'male' ? 'Bộ Sưu Tập Nam' : 'Bộ Sưu Tập Nữ'})</span>
-                      <span className="text-xs text-indigo-400 font-semibold">Tóc bao phủ kín đầu thời thượng</span>
+                      <span>
+                        {gender === 'male'
+                          ? '5 Kiểu Tóc Nam Bao Phủ Đầu Đẹp Chuẩn Men'
+                          : 'Bộ Sưu Tập Tóc Nữ Bao Phủ Đầu'}
+                      </span>
+                      <span className="text-xs text-indigo-400 font-semibold">100% bao phủ kín vòm đầu</span>
                     </h4>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -460,7 +467,10 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
                             }`}
                           >
                             <div className="flex items-center justify-between">
-                              <span className="font-bold text-xs text-white">{style.label}</span>
+                              <span className="font-bold text-xs text-white flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                                {style.label}
+                              </span>
                               {isSelected && <Check className="w-4 h-4 text-indigo-400" />}
                             </div>
                             <p className="text-[10px] text-slate-400 mt-0.5">{style.desc}</p>
@@ -502,7 +512,7 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
                 </div>
               )}
 
-              {/* TAB: SKIN */}
+              {/* TAB 3: SKIN */}
               {activeTab === 'skin' && (
                 <div className="space-y-6">
                   <div>
@@ -533,12 +543,12 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
                     </div>
                   </div>
                   <p className="text-xs text-slate-400 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
-                    💡 Màu da sẽ đồng bộ tự nhiên trên toàn bộ khuôn mặt, cổ và bàn tay của nhân vật khi di chuyển, làm việc, câu cá và vui chơi.
+                    💡 Màu da sẽ đồng bộ tự nhiên trên toàn bộ khuôn mặt, cổ và bàn tay của nhân vật.
                   </p>
                 </div>
               )}
 
-              {/* TAB: OUTFIT */}
+              {/* TAB 4: OUTFIT */}
               {activeTab === 'outfit' && (
                 <div className="space-y-5">
                   <div>
@@ -592,7 +602,7 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
                 </div>
               )}
 
-              {/* TAB: EYES */}
+              {/* TAB 5: EYES */}
               {activeTab === 'eyes' && (
                 <div className="space-y-6">
                   <div>
@@ -622,34 +632,43 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
                       ))}
                     </div>
                   </div>
-                  <p className="text-xs text-slate-400 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
-                    ✨ Nhân vật Nữ sẽ có thêm hàng mi cong duyên dáng và đôi má ửng hồng. Nhân vật Nam có chân mày nam tính và ánh mắt kiên định!
-                  </p>
                 </div>
               )}
 
-              {/* TAB: ACCESSORIES */}
+              {/* TAB 6: ACCESSORIES (PHỤ KIỆN BAO PHỦ ĐẦU) */}
               {activeTab === 'style' && (
-                <div className="space-y-6">
-                  <h4 className="text-sm font-bold text-slate-200 mb-3">Phụ Kiện Đi Kèm</h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    {ACCESSORIES.map((acc) => (
-                      <button
-                        key={acc.id}
-                        type="button"
-                        onClick={() => setAppearance({ ...appearance, accessory: acc.id })}
-                        className={`p-3.5 rounded-xl border text-sm font-semibold transition-all text-left flex items-center justify-between ${
-                          appearance.accessory === acc.id
-                            ? 'bg-indigo-950/80 border-indigo-500 text-indigo-300 shadow-md'
-                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
-                        }`}
-                      >
-                        <span>{acc.label}</span>
-                        {appearance.accessory === acc.id && (
-                          <Check className="w-4 h-4 text-indigo-400" />
-                        )}
-                      </button>
-                    ))}
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-200 mb-1">
+                      Phụ Kiện Bao Phủ Đầu
+                    </h4>
+                    <p className="text-xs text-slate-400 mb-3">
+                      Các phụ kiện mũ lưỡi trai, mũ len, tai nghe chụp đầu sẽ bao phủ trọn vẹn đỉnh đầu nhân vật.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {ACCESSORIES.map((acc) => {
+                      const isSelected = appearance.accessory === acc.id;
+                      return (
+                        <button
+                          key={acc.id}
+                          type="button"
+                          onClick={() => setAppearance({ ...appearance, accessory: acc.id as any })}
+                          className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
+                            isSelected
+                              ? 'bg-indigo-950/90 border-indigo-500 text-white shadow-md'
+                              : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <span className="font-bold text-xs text-white">{acc.label}</span>
+                            {isSelected && <Check className="w-4 h-4 text-indigo-400" />}
+                          </div>
+                          <p className="text-[10px] text-slate-400 mt-1">{acc.desc}</p>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
