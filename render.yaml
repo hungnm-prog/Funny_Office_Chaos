@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: funny-office-chaos
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: node server.js
+    envVars:
+      - key: PORT
+        value: 3000
