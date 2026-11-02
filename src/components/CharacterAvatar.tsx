@@ -32,6 +32,7 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
   const isFacingLeft = direction === 'left';
   const isFacingUp = direction === 'up';
   const isFemale = gender === 'female';
+  const hasHat = accessory === 'cap' || accessory === 'beanie';
 
   // Normalize male hairstyles
   const getNormalizedMaleStyle = (style: string) => {
@@ -131,9 +132,13 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
         return (
           <g fill={hairColor}>
             <ellipse cx="32" cy="22" rx="17" ry="15" />
-            <circle cx="32" cy="8" r="8.5" />
-            <circle cx="32" cy="8" r="9.5" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
-            <rect x="27" y="13" width="10" height="3" rx="1.5" fill="#f43f5e" />
+            {!hasHat && (
+              <>
+                <circle cx="32" cy="8" r="8.5" />
+                <circle cx="32" cy="8" r="9.5" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
+                <rect x="27" y="13" width="10" height="3" rx="1.5" fill="#f43f5e" />
+              </>
+            )}
           </g>
         );
       default:
@@ -190,8 +195,8 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
           return (
             <g fill={hairColor}>
               <path d="M 14.5 23 C 13.5 13 21 3.8 32 3.8 C 41 3.8 48 9 49.5 23 C 47 19 44 18 42 20 C 39 14 35 12 32 12 C 29 12 25 14 22 20 C 20 18 17 19 14.5 23 Z" />
-              <polygon points="28,13 32,7 36,13" />
-              <path d="M 25 14 Q 32 7.5 39 14 L 37 16 Q 32 10 27 16 Z" fill="rgba(255,255,255,0.22)" />
+              {!hasHat && <polygon points="28,13 32,7 36,13" />}
+              {!hasHat && <path d="M 25 14 Q 32 7.5 39 14 L 37 16 Q 32 10 27 16 Z" fill="rgba(255,255,255,0.22)" />}
               <rect x="15.5" y="22" width="3" height="6.5" rx="1.2" />
               <rect x="45.5" y="22" width="3" height="6.5" rx="1.2" />
               <ellipse cx="32" cy="9.5" rx="7.5" ry="1.8" fill="#ffffff" opacity="0.25" />
@@ -309,52 +314,84 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
         );
 
       // MŨ LƯỠI TRAI (Snapback / Baseball Cap)
+      // REQUIREMENT: Kích thước chuẩn xác theo vòm đầu nhân vật, không thừa ra ngoài, không thụt vào trong, không che mắt hay lông mày!
       case 'cap':
         return (
           <g>
+            {/* 1. Chóp mũ (Crown): Ôm khít chuẩn xác vòm đầu (x=17.5 đến 46.5, đỉnh tại y=9.2) */}
             <path
-              d="M 13 20 C 12 10 20 3.5 32 3.5 C 44 3.5 52 10 51 20 Z"
+              d="M 17.5 19.5 C 17.5 11.5 23 9.2 32 9.2 C 41 9.2 46.5 11.5 46.5 19.5 Q 32 17.8 17.5 19.5 Z"
               fill={outfitColor}
               stroke="#0f172a"
               strokeWidth="0.8"
             />
-            <circle cx="32" cy="3.5" r="1.8" fill="#f8fafc" />
-            <path d="M 32 3.5 L 32 18" stroke="rgba(255,255,255,0.25)" strokeWidth="0.8" />
+            {/* 2. Nút tròn đỉnh mũ (Top button) */}
+            <circle cx="32" cy="9.2" r="1.4" fill="#f8fafc" stroke="#0f172a" strokeWidth="0.5" />
+
+            {/* 3. Đường chỉ may múi mũ (Crown seams) */}
+            <path d="M 32 9.2 L 32 18.2" stroke="rgba(255,255,255,0.3)" strokeWidth="0.8" />
+            <path d="M 32 9.2 Q 24.5 12 19 18" stroke="rgba(255,255,255,0.2)" strokeWidth="0.6" fill="none" />
+            <path d="M 32 9.2 Q 39.5 12 45 18" stroke="rgba(255,255,255,0.2)" strokeWidth="0.6" fill="none" />
+
+            {/* 4. Huy hiệu/Logo thêu nổi mặt trước trán */}
+            <circle cx="32" cy="14" r="2.2" fill="#ffffff" stroke="#0f172a" strokeWidth="0.4" />
+            <polygon points="32,12.3 32.7,13.8 34.2,13.8 33,14.7 33.4,16.1 32,15.2 30.6,16.1 31,14.7 29.8,13.8 31.3,13.8" fill="#3b82f6" />
+
+            {/* 5. Vành lưỡi trai (Visor/Bill): Bắt đầu từ 2 mép thái dương x=17.5 và 46.5, cong vòm thể thao ôm nhẹ phía trước trán */}
+            {/* Vành kết thúc tại y=20.2, nằm ngay trên lông mày (y=21.0) và mắt (y=25.5), ôm khít khuôn đầu */}
             <path
-              d="M 12 18.5 C 12 17.5 20 15.5 32 15.5 C 44 15.5 52 17.5 52 18.5 C 53.5 19.5 47 20.8 32 20.8 C 17 20.8 10.5 19.5 12 18.5 Z"
+              d="M 17.5 18.5 Q 32 17.2 46.5 18.5 C 46.8 19.8 40 20.3 32 20.3 C 24 20.3 17.2 19.8 17.5 18.5 Z"
               fill="#0f172a"
-              stroke="rgba(255,255,255,0.2)"
+              stroke="rgba(255,255,255,0.25)"
               strokeWidth="0.6"
             />
-            <circle cx="32" cy="11" r="2.2" fill="#f8fafc" />
-            <rect x="31" y="10" width="2" height="2" fill="#3b82f6" />
+            {/* Đường phản quang bóng sáng trên vành lưỡi trai */}
+            <path d="M 21 19.2 Q 32 19.8 43 19.2" stroke="rgba(255,255,255,0.35)" strokeWidth="0.6" fill="none" />
           </g>
         );
 
       // MŨ LEN BEANIE
+      // REQUIREMENT: Ôm trọn vòm đầu tự nhiên, không bị bè ngang ra ngoài không khí, vành gập cong theo trán!
       case 'beanie':
         return (
           <g>
+            {/* 1. Thân vòm mũ len: Ôm sát vòm sọ từ x=17.5 đến 46.5, đỉnh mềm mại tại y=8.0 */}
             <path
-              d="M 13 18 C 11 7 20 2 32 2 C 44 2 53 7 51 18 Z"
+              d="M 17.5 17.5 C 17 10 22.5 7.8 32 7.8 C 41.5 7.8 47 10 46.5 17.5 Z"
               fill={outfitColor}
+              stroke="#0f172a"
+              strokeWidth="0.7"
             />
-            <circle cx="32" cy="1.8" r="3" fill="#f8fafc" />
-            <rect
-              x="12"
-              y="15.5"
-              width="40"
-              height="4.5"
-              rx="2.2"
+
+            {/* 2. Quả bông len trên đỉnh mũ (Pom-pom) */}
+            <circle cx="32" cy="7.2" r="2.6" fill="#f8fafc" stroke="rgba(0,0,0,0.15)" strokeWidth="0.5" />
+            <circle cx="32" cy="7.2" r="1.6" fill="#e2e8f0" opacity="0.6" />
+
+            {/* 3. Đường vân dệt trên thân mũ (Knit ribs) */}
+            <path d="M 32 7.8 L 32 16.5" stroke="rgba(255,255,255,0.22)" strokeWidth="0.7" />
+            <path d="M 27 9 Q 25 12.5 24 16.8" stroke="rgba(255,255,255,0.18)" strokeWidth="0.6" fill="none" />
+            <path d="M 37 9 Q 39 12.5 40 16.8" stroke="rgba(255,255,255,0.18)" strokeWidth="0.6" fill="none" />
+
+            {/* 4. Vành len gập (Folded Cuff): Cong tự nhiên ôm trán từ x=17.5 đến 46.5, mép dưới tại y=20.2 */}
+            <path
+              d="M 17.5 16.2 Q 32 17.2 46.5 16.2 L 46.5 19.8 Q 32 20.3 17.5 19.8 Z"
               fill="#1e293b"
               stroke={outfitColor}
-              strokeWidth="0.8"
+              strokeWidth="0.7"
             />
-            <line x1="20" y1="15.5" x2="20" y2="20" stroke="rgba(255,255,255,0.25)" strokeWidth="0.8" />
-            <line x1="26" y1="15.5" x2="26" y2="20" stroke="rgba(255,255,255,0.25)" strokeWidth="0.8" />
-            <line x1="32" y1="15.5" x2="32" y2="20" stroke="rgba(255,255,255,0.25)" strokeWidth="0.8" />
-            <line x1="38" y1="15.5" x2="38" y2="20" stroke="rgba(255,255,255,0.25)" strokeWidth="0.8" />
-            <line x1="44" y1="15.5" x2="44" y2="20" stroke="rgba(255,255,255,0.25)" strokeWidth="0.8" />
+
+            {/* 5. Các đường gân len đan trên vành gập (Ribbed stitches) */}
+            <line x1="21.5" y1="16.6" x2="21.5" y2="19.9" stroke="rgba(255,255,255,0.22)" strokeWidth="0.7" />
+            <line x1="25.0" y1="16.9" x2="25.0" y2="20.1" stroke="rgba(255,255,255,0.22)" strokeWidth="0.7" />
+            <line x1="28.5" y1="17.1" x2="28.5" y2="20.2" stroke="rgba(255,255,255,0.22)" strokeWidth="0.7" />
+            <line x1="32.0" y1="17.2" x2="32.0" y2="20.3" stroke="rgba(255,255,255,0.22)" strokeWidth="0.7" />
+            <line x1="35.5" y1="17.1" x2="35.5" y2="20.2" stroke="rgba(255,255,255,0.22)" strokeWidth="0.7" />
+            <line x1="39.0" y1="16.9" x2="39.0" y2="20.1" stroke="rgba(255,255,255,0.22)" strokeWidth="0.7" />
+            <line x1="42.5" y1="16.6" x2="42.5" y2="19.9" stroke="rgba(255,255,255,0.22)" strokeWidth="0.7" />
+
+            {/* 6. Nhãn da thời trang nhỏ bên góc mũ (Brand leather patch) */}
+            <rect x="23.5" y="17.2" width="4.5" height="2.2" rx="0.5" fill="#ca8a04" stroke="#a16207" strokeWidth="0.4" />
+            <line x1="24.8" y1="18.3" x2="26.7" y2="18.3" stroke="#ffffff" strokeWidth="0.5" />
           </g>
         );
 
