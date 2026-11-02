@@ -645,47 +645,68 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
     );
   };
 
-  // 6. EYES & SMILE
+  // 6. EYES, EYEBROWS & SMILE
   const renderEyes = () => {
     if (isFacingUp) return null;
 
-    const leftEyeX = isFacingLeft ? 24 : 26.5;
-    const rightEyeX = isFacingLeft ? 33.5 : 37.5;
+    const leftEyeX = 26.5;
+    const rightEyeX = 37.5;
     const eyeY = 25.5;
 
     return (
       <g>
+        {/* LÔNG MÀY (EYEBROWS) */}
+        {isFemale ? (
+          // Lông mày nữ lá liễu: Dáng cong thanh tú, mềm mại, đối xứng hoàn hảo 2 bên
+          <g stroke="#1e293b" strokeWidth="1.1" strokeLinecap="round" fill="none">
+            {/* Lông mày trái: Từ đầu mày gần mũi uốn cong lên vòm rồi vuốt nhẹ đuôi về thái dương */}
+            <path d={`M ${leftEyeX + 3.0} ${eyeY - 4.2} Q ${leftEyeX} ${eyeY - 5.4} ${leftEyeX - 3.2} ${eyeY - 4.3}`} />
+            {/* Lông mày phải: Từ đầu mày gần mũi uốn cong lên vòm rồi vuốt nhẹ đuôi về thái dương */}
+            <path d={`M ${rightEyeX - 3.0} ${eyeY - 4.2} Q ${rightEyeX} ${eyeY - 5.4} ${rightEyeX + 3.2} ${eyeY - 4.3}`} />
+          </g>
+        ) : (
+          // Lông mày nam: Thẳng, rậm, nam tính sắc nét
+          <g stroke="#0f172a" strokeWidth="1.5" strokeLinecap="round">
+            <line x1={leftEyeX - 3.0} y1={eyeY - 4.5} x2={leftEyeX + 2.8} y2={eyeY - 4.0} />
+            <line x1={rightEyeX - 2.8} y1={eyeY - 4.0} x2={rightEyeX + 3.0} y2={eyeY - 4.5} />
+          </g>
+        )}
+
+        {/* TRÒNG MẮT (EYEBALLS) */}
+        {/* Mắt trái */}
         <circle cx={leftEyeX} cy={eyeY} r="3.2" fill="#ffffff" />
         <circle cx={leftEyeX} cy={eyeY} r="2.1" fill={eyeColor} />
         <circle cx={leftEyeX - 0.7} cy={eyeY - 0.7} r="1" fill="#ffffff" />
         {isFemale && <circle cx={leftEyeX + 0.8} cy={eyeY + 0.8} r="0.6" fill="#ffffff" />}
 
+        {/* Mắt phải */}
         <circle cx={rightEyeX} cy={eyeY} r="3.2" fill="#ffffff" />
         <circle cx={rightEyeX} cy={eyeY} r="2.1" fill={eyeColor} />
         <circle cx={rightEyeX - 0.7} cy={eyeY - 0.7} r="1" fill="#ffffff" />
         {isFemale && <circle cx={rightEyeX + 0.8} cy={eyeY + 0.8} r="0.6" fill="#ffffff" />}
 
+        {/* MI MẮT NỮ (EYELINER & EYELASHES) - ĐỐI XỨNG CHUẨN XÁC RA 2 THÁI DƯƠNG */}
         {isFemale && (
-          <g stroke="#0f172a" strokeWidth="1.2" strokeLinecap="round">
-            <path d={`M ${leftEyeX - 2.5} ${eyeY - 2.2} Q ${leftEyeX} ${eyeY - 3.5} ${leftEyeX + 2.5} ${eyeY - 2.2}`} fill="none" />
-            <line x1={leftEyeX + 2.2} y1={eyeY - 2.2} x2={leftEyeX + 3.8} y2={eyeY - 3.8} />
-            <path d={`M ${rightEyeX - 2.5} ${eyeY - 2.2} Q ${rightEyeX} ${eyeY - 3.5} ${rightEyeX + 2.5} ${eyeY - 2.2}`} fill="none" />
-            <line x1={rightEyeX + 2.2} y1={eyeY - 2.2} x2={rightEyeX + 3.8} y2={eyeY - 3.8} />
+          <g stroke="#0f172a" strokeWidth="1.1" strokeLinecap="round" fill="none">
+            {/* Viền mí trên mắt trái cong tự nhiên theo bờ mắt */}
+            <path d={`M ${leftEyeX + 2.6} ${eyeY - 2.4} Q ${leftEyeX} ${eyeY - 3.3} ${leftEyeX - 2.6} ${eyeY - 2.4}`} />
+            {/* Đuôi mi mắt trái vút nhẹ ra phía thái dương ngoài */}
+            <line x1={leftEyeX - 2.6} y1={eyeY - 2.4} x2={leftEyeX - 3.8} y2={eyeY - 3.4} />
+
+            {/* Viền mí trên mắt phải cong tự nhiên theo bờ mắt */}
+            <path d={`M ${rightEyeX - 2.6} ${eyeY - 2.4} Q ${rightEyeX} ${eyeY - 3.3} ${rightEyeX + 2.6} ${eyeY - 2.4}`} />
+            {/* Đuôi mi mắt phải vút nhẹ ra phía thái dương ngoài */}
+            <line x1={rightEyeX + 2.6} y1={eyeY - 2.4} x2={rightEyeX + 3.8} y2={eyeY - 3.4} />
           </g>
         )}
 
-        {!isFemale && (
-          <g stroke="#0f172a" strokeWidth="1.5" strokeLinecap="round">
-            <line x1={leftEyeX - 2.5} y1={eyeY - 4.2} x2={leftEyeX + 2.5} y2={eyeY - 3.8} />
-            <line x1={rightEyeX - 2.5} y1={eyeY - 3.8} x2={rightEyeX + 2.5} y2={eyeY - 4.2} />
-          </g>
-        )}
-
+        {/* MÁ HỒNG (BLUSH) */}
         <ellipse cx={leftEyeX - 1} cy={eyeY + 4} rx={isFemale ? 3.2 : 2.2} ry="1.5" fill="#f43f5e" opacity={isFemale ? 0.45 : 0.3} />
         <ellipse cx={rightEyeX + 1} cy={eyeY + 4} rx={isFemale ? 3.2 : 2.2} ry="1.5" fill="#f43f5e" opacity={isFemale ? 0.45 : 0.3} />
 
+        {/* NỤ CƯỜI (SMILE) */}
         <path
-          d={isFacingLeft ? 'M 26 32 Q 28 34.5 31 32' : 'M 30 32 Q 32 34.5 34 32'}
+          d="M 30 32 Q 32 34.5 34 32"
           stroke={isFemale ? '#e11d48' : '#991b1b'}
           strokeWidth={isFemale ? '1.5' : '1.3'}
           strokeLinecap="round"
