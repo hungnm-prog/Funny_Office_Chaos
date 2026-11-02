@@ -70,6 +70,7 @@ wss.on('connection', (ws) => {
             player.isSitting = data.isSitting;
             player.sittingSeatId = data.sittingSeatId;
             player.currentAction = data.currentAction;
+            if (data.dimensionId) player.dimensionId = data.dimensionId;
             player.lastSeen = Date.now();
 
             broadcastExcept(ws, {
@@ -82,6 +83,7 @@ wss.on('connection', (ws) => {
                 isSitting: data.isSitting,
                 sittingSeatId: data.sittingSeatId,
                 currentAction: data.currentAction,
+                dimensionId: data.dimensionId || player.dimensionId,
               },
             });
           }

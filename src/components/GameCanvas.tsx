@@ -1,9 +1,13 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import type { Character, Seat } from '../types/game';
-import { MAP_WIDTH, MAP_HEIGHT } from '../constants/officeLayout';
+import type { Character, Seat, DimensionId } from '../types/game';
+import { MAP_WIDTH, MAP_HEIGHT, DIMENSIONS } from '../constants/officeLayout';
 import { WorkZone } from './OfficeZones/WorkZone';
 import { KitchenZone } from './OfficeZones/KitchenZone';
 import { RecreationZone } from './OfficeZones/RecreationZone';
+import { SkyLoungeZone } from './OfficeZones/SkyLoungeZone';
+import { QuantumMatrixZone } from './OfficeZones/QuantumMatrixZone';
+import { ZenIslandZone } from './OfficeZones/ZenIslandZone';
+import { DimensionPortal } from './DimensionPortal';
 import { CharacterAvatar } from './CharacterAvatar';
 import {
   ZoomIn,
@@ -19,6 +23,8 @@ import {
 interface GameCanvasProps {
   userCharacter: Character;
   allCharacters: Character[];
+  currentDimension: DimensionId;
+  onTeleport: (dimId: DimensionId) => void;
   onMoveUser: (targetX: number, targetY: number) => void;
   onSeatUser: (seat: Seat) => void;
   onTriggerEvent: (title: string, message: string) => void;
@@ -35,6 +41,8 @@ interface ClickRipple {
 export const GameCanvas: React.FC<GameCanvasProps> = ({
   userCharacter,
   allCharacters,
+  currentDimension = 'office',
+  onTeleport,
   onMoveUser,
   onSeatUser,
   onTriggerEvent,
@@ -43,6 +51,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const floorRef = useRef<HTMLDivElement>(null);
+
+  const currentDimConfig = DIMENSIONS.find((d) => d.id === currentDimension) || DIMENSIONS[0];
 
   // 3D Perspective & Modern View State (Default to Modern 3D Mode!)
   const [viewMode, setViewMode] = useState<'3d' | '2d'>('3d');
@@ -221,9 +231,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       let worldY = userCharacter.position.y;
 
       if (viewMode === '3d' && floorRef.current) {
-        // In 3D transformed surface, native offsets on floor element provide exact local coordinate
         const floorRect = floorRef.current.getBoundingClientRect();
-        // Fallback approximation or native offset
         const relX = (e.clientX - floorRect.left) / (floorRect.width / MAP_WIDTH);
         const relY = (e.clientY - floorRect.top) / (floorRect.height / MAP_HEIGHT);
         worldX = Math.max(120, Math.min(MAP_WIDTH - 120, relX));
@@ -326,11 +334,19 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     }
   };
 
+  // Occupied seats mapping
   const occupiedSeats: Record<string, string> = {};
   allCharacters.forEach((char) => {
     if (char.isSitting && char.sittingSeatId) {
       occupiedSeats[char.sittingSeatId] = char.name;
     }
+  });
+
+  // Filter visible characters by active dimension
+  const visibleCharacters = allCharacters.filter((char) => {
+    if (char.id === userCharacter.id) return true; // User is always in active dimension
+    const charDim = char.dimensionId || 'office';
+    return charDim === currentDimension;
   });
 
   return (
@@ -345,12 +361,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onContextMenu={(e) => e.preventDefault()}
-      className={`relative w-full h-full overflow-hidden cyber-space-void select-none scene-3d-container ${
+      className={`relative w-full h-full overflow-hidden ${currentDimConfig.skyVoidClass} select-none scene-3d-container ${
         isPanning ? 'cursor-grabbing' : 'cursor-grab'
       }`}
     >
       {/* ========================================================= */}
-      {/* 1. FLOATING MODERN 3D / 2D CONTROLS & CAMERA HUD */}
+      {/* 1. FLOATING 3D / 2D CONTROLS & CAMERA HUD */}
       {/* ========================================================= */}
       <div className="fixed bottom-24 left-6 z-40 flex items-center gap-2 no-click-move">
         {/* Modern 3D / 2D Perspective Toggle Button */}
@@ -468,19 +484,19 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         </div>
       </div>
 
-      {/* GAME NAVIGATION GUIDE BADGE */}
+      {/* NAVIGATION GUIDE BADGE */}
       <div className="fixed top-20 left-6 z-30 pointer-events-none hidden md:flex items-center gap-2 bg-slate-900/85 backdrop-blur-md border border-slate-700/80 rounded-xl px-3.5 py-1.5 text-xs text-slate-300 shadow-xl">
         <MousePointerClick className="w-4 h-4 text-cyan-400 animate-pulse" />
         <span>
           <strong className="text-white">WASD / Mũi Tên:</strong> Đi lại •{' '}
           <strong className="text-white">Click:</strong> Di chuyển •{' '}
           <strong className="text-white">Kéo Chuột:</strong> Lia bản đồ •{' '}
-          <span className="text-indigo-300 font-bold">Chế độ 3D Không Gian Đang Bật</span>
+          <span className="text-indigo-300 font-bold">{currentDimConfig.name}</span>
         </span>
       </div>
 
       {/* ========================================================= */}
-      {/* 2. MASTER 3D / 2D TRANSFORM CONTAINER FOR THE OFFICE */}
+      {/* 2. MASTER 3D / 2D TRANSFORM CONTAINER FOR THE REALM */}
       {/* ========================================================= */}
       <div
         className="absolute origin-top-left transition-transform duration-100 ease-out map-3d-surface"
@@ -495,7 +511,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         }}
       >
         {/* ========================================================= */}
-        {/* 3D EXTRUDED FOUNDATION SLAB (Gives true 3D thickness) */}
+        {/* 3D EXTRUDED FOUNDATION SLAB */}
         {/* ========================================================= */}
         {viewMode === '3d' && (
           <div
@@ -503,8 +519,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             style={{
               transform: 'translateZ(-28px)',
               background: 'linear-gradient(180deg, #090e17 0%, #030712 100%)',
-              border: '10px solid #1e293b',
-              boxShadow: '0 45px 95px rgba(0, 0, 0, 0.95), 0 0 50px rgba(99, 102, 241, 0.2)',
+              border: `10px solid ${currentDimConfig.themeColor}55`,
+              boxShadow: `0 45px 95px rgba(0, 0, 0, 0.95), 0 0 60px ${currentDimConfig.themeColor}33`,
             }}
           />
         )}
@@ -550,14 +566,14 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
               width: 140,
             }}
           >
-            {/* Grand Royal Red Carpet Runner with Gold Border */}
+            {/* Grand Royal Runner */}
             <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-16 bg-[#831843] border-x-2 border-[#f59e0b] shadow-lg flex flex-col justify-around items-center">
               {Array.from({ length: 14 }).map((_, i) => (
                 <div key={i} className="w-10 h-0.5 bg-[#f59e0b]/30" />
               ))}
             </div>
 
-            {/* Potted Ficus Trees along the Hallway */}
+            {/* Plants along the hallway */}
             <div className="absolute top-28 left-2 text-2xl filter drop-shadow">🪴</div>
             <div className="absolute top-28 right-2 text-2xl filter drop-shadow">🪴</div>
             <div className="absolute top-[480px] left-2 text-2xl filter drop-shadow">🪴</div>
@@ -566,56 +582,58 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             <div className="absolute top-[900px] right-2 text-2xl filter drop-shadow">🪴</div>
             <div className="absolute top-[1380px] left-2 text-2xl filter drop-shadow">🪴</div>
             <div className="absolute top-[1380px] right-2 text-2xl filter drop-shadow">🪴</div>
-
-            {/* Hallway Wayfinding Floor Direction Decals */}
-            <div className="absolute top-64 left-1/2 -translate-x-1/2 bg-slate-900/90 text-[9px] font-mono font-bold text-amber-300 px-2 py-0.5 rounded border border-amber-500/50 whitespace-nowrap shadow">
-              ⬅️ LÀM VIỆC • HỒ KOI ➡️
-            </div>
-            <div className="absolute top-[820px] left-1/2 -translate-x-1/2 bg-slate-900/90 text-[9px] font-mono font-bold text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/50 whitespace-nowrap shadow">
-              ⬅️ CĂN TIN • CASINO ➡️
-            </div>
           </div>
 
           {/* ========================================================= */}
-          {/* GRAND 3D LOBBY & RECEPTION COUNTER (Top Center) */}
+          {/* 3D IN-WORLD DIMENSION WORMHOLE PORTAL (AT TOP CENTER) */}
           {/* ========================================================= */}
-          <div className="absolute top-18 left-1/2 -translate-x-1/2 z-10 flex items-center gap-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border-2 border-indigo-500/70 px-8 py-2.5 rounded-2xl shadow-2xl pointer-events-none">
-            <div className="flex items-center gap-3">
-              <span className="text-3xl filter drop-shadow">🏢</span>
-              <div>
-                <h2 className="text-sm font-black tracking-widest text-white uppercase font-mono">
-                  FUNNY OFFICE CHAOS • 3D METAVERSE
-                </h2>
-                <p className="text-[10px] text-indigo-300 font-medium">
-                  20 Bàn Làm Việc • 3 Bàn Căn Tin (24 Ghế) • Hồ Cá Koi • Rạp Phim • Sòng Bài • Phòng Arcade
-                </p>
-              </div>
-            </div>
-
-            <div className="w-[1px] h-8 bg-indigo-500/40" />
-
-            <div className="flex items-center gap-2 text-sm">
-              <span title="Chuông Tiếp Tân">🛎️</span>
-              <span title="Hoa Chào Mừng">💐</span>
-              <span title="Cà Phê Sáng">☕</span>
-            </div>
-          </div>
-
-          {/* ========================================================= */}
-          {/* OFFICE ZONES */}
-          {/* ========================================================= */}
-          {/* ZONE 1: WORK ZONE (20 Desks) */}
-          <WorkZone onSeatClick={onSeatUser} occupiedSeats={occupiedSeats} />
-
-          {/* ZONE 2: KITCHEN & CANTEEN ZONE (3 Tables x 8 Seats = 24 Seats) */}
-          <KitchenZone onSeatClick={onSeatUser} occupiedSeats={occupiedSeats} />
-
-          {/* ZONE 3: RECREATION ZONE (Fishing, Cards, Cinema, Gaming) */}
-          <RecreationZone
-            onSeatClick={onSeatUser}
-            occupiedSeats={occupiedSeats}
-            onTriggerEvent={onTriggerEvent}
+          <DimensionPortal
+            currentDimension={currentDimension}
+            onTeleport={onTeleport}
           />
+
+          {/* ========================================================= */}
+          {/* DYNAMIC REALM DIMENSION ZONES */}
+          {/* ========================================================= */}
+          {/* REALM 1: CYBER OFFICE 4.0 */}
+          {currentDimension === 'office' && (
+            <>
+              <WorkZone onSeatClick={onSeatUser} occupiedSeats={occupiedSeats} />
+              <KitchenZone onSeatClick={onSeatUser} occupiedSeats={occupiedSeats} />
+              <RecreationZone
+                onSeatClick={onSeatUser}
+                occupiedSeats={occupiedSeats}
+                onTriggerEvent={onTriggerEvent}
+              />
+            </>
+          )}
+
+          {/* REALM 2: SKY LOUNGE & ROOFTOP TERRACE */}
+          {currentDimension === 'sky_lounge' && (
+            <SkyLoungeZone
+              onSeatClick={onSeatUser}
+              occupiedSeats={occupiedSeats}
+              onTriggerEvent={onTriggerEvent}
+            />
+          )}
+
+          {/* REALM 3: QUANTUM MATRIX CYBERPUNK REALM */}
+          {currentDimension === 'quantum_matrix' && (
+            <QuantumMatrixZone
+              onSeatClick={onSeatUser}
+              occupiedSeats={occupiedSeats}
+              onTriggerEvent={onTriggerEvent}
+            />
+          )}
+
+          {/* REALM 4: ZEN ISLAND FLOATING SANCTUARY */}
+          {currentDimension === 'zen_island' && (
+            <ZenIslandZone
+              onSeatClick={onSeatUser}
+              occupiedSeats={occupiedSeats}
+              onTriggerEvent={onTriggerEvent}
+            />
+          )}
 
           {/* ========================================================= */}
           {/* CLICK RIPPLE BEACONS */}
@@ -631,7 +649,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           {/* ========================================================= */}
           {/* CHARACTERS RENDERING (WITH 3D BILLBOARDING) */}
           {/* ========================================================= */}
-          {allCharacters.map((char) => {
+          {visibleCharacters.map((char) => {
             const isUser = char.id === userCharacter.id;
 
             return (

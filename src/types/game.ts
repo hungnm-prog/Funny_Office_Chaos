@@ -1,5 +1,18 @@
 export type CharacterStatus = 'online' | 'offline' | 'busy';
 export type Gender = 'male' | 'female';
+export type DimensionId = 'office' | 'sky_lounge' | 'quantum_matrix' | 'zen_island';
+
+export interface DimensionConfig {
+  id: DimensionId;
+  name: string;
+  tagline: string;
+  icon: string;
+  badge: string;
+  themeColor: string;
+  skyVoidClass: string;
+  portalPosition: { x: number; y: number };
+  defaultSpawn: { x: number; y: number };
+}
 
 export interface CharacterAppearance {
   gender: Gender;
@@ -25,10 +38,26 @@ export interface Character {
   isMoving: boolean;
   isSitting: boolean;
   sittingSeatId?: string;
-  currentAction?: 'idle' | 'working' | 'eating' | 'fishing' | 'gaming' | 'watching' | 'cards';
+  currentAction?:
+    | 'idle'
+    | 'working'
+    | 'eating'
+    | 'fishing'
+    | 'gaming'
+    | 'watching'
+    | 'cards'
+    | 'drinking'
+    | 'swimming'
+    | 'stargazing'
+    | 'music'
+    | 'quantum'
+    | 'hacking'
+    | 'zen'
+    | 'tea';
   lastMessage: string;
   lastMessageTime: string;
   isUser: boolean;
+  dimensionId?: DimensionId;
 }
 
 export interface Seat {
@@ -36,9 +65,25 @@ export interface Seat {
   label: string;
   x: number;
   y: number;
-  type: 'desk' | 'dining' | 'cinema' | 'card' | 'gaming' | 'fishing';
+  type:
+    | 'desk'
+    | 'dining'
+    | 'cinema'
+    | 'card'
+    | 'gaming'
+    | 'fishing'
+    | 'bar'
+    | 'pool'
+    | 'telescope'
+    | 'music'
+    | 'quantum'
+    | 'hack'
+    | 'zen'
+    | 'tea'
+    | 'onsen';
   occupiedBy?: string;
   direction: 'up' | 'down' | 'left' | 'right';
+  dimensionId?: DimensionId;
 }
 
 export interface WorkDesk {
@@ -82,6 +127,7 @@ export interface ChatMessage {
   timestamp: string;
   mentions: string[];
   isLong: boolean;
+  dimensionId?: DimensionId;
 }
 
 export interface ToastItem {

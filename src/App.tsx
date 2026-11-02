@@ -1,18 +1,29 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { Character, CharacterStatus, Seat, ToastItem, ChatMessage } from './types/game';
+import type { Character, CharacterStatus, Seat, ToastItem, ChatMessage, DimensionId } from './types/game';
 import { INITIAL_COLLEAGUES, OFFICE_RANDOM_CHATS } from './constants/colleagues';
+import { DIMENSIONS } from './constants/officeLayout';
 import { VietnamClock } from './components/VietnamClock';
 import { CharacterCreator } from './components/CharacterCreator';
 import { GameCanvas } from './components/GameCanvas';
 import { ChatBar } from './components/ChatBar';
 import { Minimap } from './components/Minimap';
+import { DimensionNavHUD } from './components/DimensionNavHUD';
 import { ToastContainer } from './components/ToastContainer';
 import { ExitModal } from './components/ExitModal';
 import { LogOut, UserCheck, Sparkles } from 'lucide-react';
 
 const STORAGE_KEY = 'office_game_user_character';
+const DIMENSION_KEY = 'office_game_dimension';
 
 export function App() {
+  const [currentDimension, setCurrentDimension] = useState<DimensionId>(() => {
+    try {
+      const saved = localStorage.getItem(DIMENSION_KEY);
+      if (saved) return saved as DimensionId;
+    } catch {}
+    return 'office';
+  });
+
   const [userCharacter, setUserCharacter] = useState<Character | null>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -23,6 +34,7 @@ export function App() {
           status: 'online',
           isMoving: false,
           isSitting: parsed.isSitting || false,
+          dimensionId: parsed.dimensionId || 'office',
         };
       }
     } catch (e) {
@@ -95,7 +107,10 @@ export function App() {
           socket?.send(
             JSON.stringify({
               type: 'PLAYER_JOIN',
-              data: userCharacter,
+              data: {
+                ...userCharacter,
+                dimensionId: currentDimension,
+              },
             })
           );
         }
@@ -125,6 +140,7 @@ export function App() {
                       isSitting: data.isSitting,
                       sittingSeatId: data.sittingSeatId,
                       currentAction: data.currentAction,
+                      dimensionId: data.dimensionId || c.dimensionId || 'office',
                     }
                   : c
               )
@@ -141,7 +157,7 @@ export function App() {
         }
       };
     } catch {
-      // WS not available in dev mode or direct file opening
+      // WS fallback
     }
 
     return () => {
@@ -149,7 +165,7 @@ export function App() {
         socket.close();
       }
     };
-  }, [handleIncomingChatMessage, userCharacter]);
+  }, [handleIncomingChatMessage, userCharacter, currentDimension]);
 
   // Multi-tab BroadcastChannel setup as local backup
   useEffect(() => {
@@ -176,6 +192,63 @@ export function App() {
     }
   }, [handleIncomingChatMessage]);
 
+  // Dimension Warp / Teleport Handler
+  const handleTeleport = (dimId: DimensionId) => {
+    setCurrentDimension(dimId);
+    try {
+      localStorage.setItem(DIMENSION_KEY, dimId);
+    } catch {}
+
+    if (userCharacter) {
+      const targetConfig = DIMENSIONS.find((d) => d.id === dimId);
+      const spawnCoord = targetConfig?.defaultSpawn || { x: 1210, y: 520 };
+
+      const updatedUser: Character = {
+        ...userCharacter,
+        dimensionId: dimId,
+        position: spawnCoord,
+        isMoving: false,
+        isSitting: false,
+        sittingSeatId: undefined,
+      };
+      setUserCharacter(updatedUser);
+      saveCharacterToStorage(updatedUser);
+
+      const timeStr = new Date().toLocaleTimeString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      const warpMsg: ChatMessage = {
+        id: `warp-${Date.now()}`,
+        senderId: updatedUser.id,
+        senderName: updatedUser.name,
+        senderRole: updatedUser.role,
+        senderAppearance: updatedUser.appearance,
+        content: `Vừa bước qua Cổng Không Gian dịch chuyển đến: ${targetConfig?.name || dimId}! 🌌✨`,
+        timestamp: timeStr,
+        mentions: [],
+        isLong: false,
+        dimensionId: dimId,
+      };
+      handleIncomingChatMessage(warpMsg);
+
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(
+          JSON.stringify({
+            type: 'PLAYER_MOVE',
+            data: {
+              position: updatedUser.position,
+              direction: updatedUser.direction,
+              isMoving: false,
+              isSitting: false,
+              dimensionId: dimId,
+            },
+          })
+        );
+      }
+    }
+  };
+
   // Dispatch a new chat message from player
   const handleSendMessage = (content: string, mentions: string[]) => {
     if (!userCharacter) return;
@@ -189,23 +262,25 @@ export function App() {
       ...userCharacter,
       lastMessage: content,
       lastMessageTime: timeStr,
+      dimensionId: currentDimension,
     };
     setUserCharacter(updatedUser);
     saveCharacterToStorage(updatedUser);
 
+    const currentConfig = DIMENSIONS.find((d) => d.id === currentDimension);
     const chatMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
       senderId: updatedUser.id,
       senderName: updatedUser.name,
-      senderRole: updatedUser.role,
+      senderRole: `${updatedUser.role} [${currentConfig?.icon || '🏢'}]`,
       senderAppearance: updatedUser.appearance,
       content,
       timestamp: timeStr,
       mentions,
       isLong: content.length > 50,
+      dimensionId: currentDimension,
     };
 
-    // Trigger Toast Notification
     handleIncomingChatMessage(chatMsg);
 
     // Send via WebSocket to server
@@ -233,8 +308,8 @@ export function App() {
             const replies = [
               `Chào @${userCharacter.name}, tôi nghe đây! Cần hỗ trợ gì về dự án không? 🤝`,
               `@${userCharacter.name} ơi, tôi vừa nhận được thông tin rồi, để tôi check ngay nhé! ✨`,
-              `Đồng ý với @${userCharacter.name}, lát 14h mình thảo luận kỹ hơn ở phòng họp nhé! 👍`,
-              `@${userCharacter.name} tag chuẩn ghê, tôi cũng đang chuẩn bị gửi bản báo cáo cho team nè. 🚀`,
+              `Đồng ý với @${userCharacter.name}, lát mình thảo luận kỹ hơn nhé! 👍`,
+              `@${userCharacter.name} tag chuẩn ghê, tôi cũng đang ở đây nè! 🚀`,
             ];
             const replyContent = replies[Math.floor(Math.random() * replies.length)];
             makeColleagueChat(colleague.id, replyContent);
@@ -270,6 +345,7 @@ export function App() {
             timestamp: timeStr,
             mentions: [],
             isLong: content.length > 50,
+            dimensionId: c.dimensionId || 'office',
           };
           handleIncomingChatMessage(chatMsg);
 
@@ -328,6 +404,7 @@ export function App() {
                   isSitting: arrivedChar.isSitting,
                   sittingSeatId: arrivedChar.sittingSeatId,
                   currentAction: arrivedChar.currentAction,
+                  dimensionId: currentDimension,
                 },
               })
             );
@@ -366,7 +443,7 @@ export function App() {
     return () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
-  }, [userCharacter, saveCharacterToStorage]);
+  }, [userCharacter, saveCharacterToStorage, currentDimension]);
 
   // Move user on floor click
   const handleMoveUser = (targetX: number, targetY: number) => {
@@ -389,12 +466,20 @@ export function App() {
   const handleSeatUser = (seat: Seat) => {
     if (!userCharacter) return;
 
-    let action: 'working' | 'eating' | 'watching' | 'cards' | 'gaming' | 'fishing' = 'working';
+    let action: any = 'working';
     if (seat.type === 'dining') action = 'eating';
     else if (seat.type === 'cinema') action = 'watching';
     else if (seat.type === 'card') action = 'cards';
     else if (seat.type === 'gaming') action = 'gaming';
     else if (seat.type === 'fishing') action = 'fishing';
+    else if (seat.type === 'bar') action = 'drinking';
+    else if (seat.type === 'pool') action = 'swimming';
+    else if (seat.type === 'telescope') action = 'stargazing';
+    else if (seat.type === 'music') action = 'music';
+    else if (seat.type === 'quantum') action = 'quantum';
+    else if (seat.type === 'hack') action = 'hacking';
+    else if (seat.type === 'tea') action = 'tea';
+    else if (seat.type === 'zen' || seat.type === 'onsen') action = 'zen';
 
     const seatedUser: Character = {
       ...userCharacter,
@@ -405,6 +490,7 @@ export function App() {
       sittingSeatId: seat.id,
       direction: seat.direction,
       currentAction: action,
+      dimensionId: currentDimension,
     };
 
     setUserCharacter(seatedUser);
@@ -421,6 +507,7 @@ export function App() {
             isSitting: true,
             sittingSeatId: seat.id,
             currentAction: action,
+            dimensionId: currentDimension,
           },
         })
       );
@@ -492,12 +579,13 @@ export function App() {
       id: `event-${Date.now()}`,
       senderId: userCharacter.id,
       senderName: `${userCharacter.name} (${title})`,
-      senderRole: 'Công Sở Event',
+      senderRole: 'Vũ Trụ Event',
       senderAppearance: userCharacter.appearance,
       content: message,
       timestamp: timeStr,
       mentions: [],
       isLong,
+      dimensionId: currentDimension,
     };
     handleIncomingChatMessage(chatMsg);
 
@@ -522,14 +610,23 @@ export function App() {
       {/* 1. VIETNAM CLOCK (Top-Left Corner) */}
       <VietnamClock />
 
-      {/* 2. TOP RIGHT HUD ACTIONS */}
+      {/* 2. TOP CENTER MULTIDIMENSIONAL WARP NAV HUD */}
+      {userCharacter && (
+        <DimensionNavHUD
+          currentDimension={currentDimension}
+          onSelectDimension={handleTeleport}
+          allCharacters={allCharacters}
+        />
+      )}
+
+      {/* 3. TOP RIGHT HUD ACTIONS */}
       <div className="fixed top-4 right-4 z-40 flex items-center gap-2 pointer-events-auto">
         {userCharacter && (
           <>
             <button
               type="button"
               onClick={() => setIsEditingCharacter(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700/80 shadow-xl text-xs font-bold transition-all hover:scale-105 active:scale-95"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700/80 shadow-xl text-xs font-bold transition-all hover:scale-105 active:scale-95 cursor-pointer"
               title="Đổi diện mạo, màu tóc, da, trang phục"
             >
               <UserCheck className="w-4 h-4 text-indigo-400" />
@@ -539,7 +636,7 @@ export function App() {
             <button
               type="button"
               onClick={() => setShowExitModal(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-950/80 hover:bg-rose-900/90 text-rose-200 border border-rose-800/80 shadow-xl text-xs font-bold transition-all hover:scale-105 active:scale-95"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-950/80 hover:bg-rose-900/90 text-rose-200 border border-rose-800/80 shadow-xl text-xs font-bold transition-all hover:scale-105 active:scale-95 cursor-pointer"
               title="Thoát & Lưu vị trí"
             >
               <LogOut className="w-4 h-4 text-rose-400" />
@@ -549,7 +646,7 @@ export function App() {
         )}
       </div>
 
-      {/* 3. TOAST NOTIFICATIONS (Top-Right) */}
+      {/* 4. TOAST NOTIFICATIONS (Top-Right) */}
       <div className="fixed top-16 right-4 z-50">
         <ToastContainer
           toasts={toasts}
@@ -558,11 +655,13 @@ export function App() {
         />
       </div>
 
-      {/* 4. MAIN INTERACTIVE GAME WORLD CANVAS */}
+      {/* 5. MAIN INTERACTIVE 3D GAME WORLD CANVAS */}
       {userCharacter ? (
         <GameCanvas
           userCharacter={userCharacter}
           allCharacters={allCharacters}
+          currentDimension={currentDimension}
+          onTeleport={handleTeleport}
           onMoveUser={handleMoveUser}
           onSeatUser={handleSeatUser}
           onTriggerEvent={handleTriggerEvent}
@@ -574,11 +673,11 @@ export function App() {
           <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 animate-pulse mb-3">
             <Sparkles className="w-6 h-6" />
           </div>
-          <p className="text-sm font-semibold">Đang tải không gian công sở...</p>
+          <p className="text-sm font-semibold">Đang tải vũ trụ không gian đa chiều...</p>
         </div>
       )}
 
-      {/* 5. MINIMAP OVERLAY (Bottom Right) */}
+      {/* 6. MINIMAP OVERLAY (Bottom Right) */}
       {userCharacter && (
         <Minimap
           characters={allCharacters}
@@ -588,7 +687,7 @@ export function App() {
         />
       )}
 
-      {/* 6. CHAT BAR (Bottom Center) */}
+      {/* 7. CHAT BAR (Bottom Center) */}
       {userCharacter && (
         <ChatBar
           userCharacter={userCharacter}
@@ -598,15 +697,16 @@ export function App() {
         />
       )}
 
-      {/* 7. CHARACTER CREATOR MODAL */}
+      {/* 8. CHARACTER CREATOR MODAL */}
       {(!userCharacter || isEditingCharacter) && (
         <CharacterCreator
           initialCharacter={userCharacter}
           isEditing={!!userCharacter}
           onCancel={() => setIsEditingCharacter(false)}
           onSave={(savedChar) => {
-            setUserCharacter(savedChar);
-            saveCharacterToStorage(savedChar);
+            const charWithDim = { ...savedChar, dimensionId: currentDimension };
+            setUserCharacter(charWithDim);
+            saveCharacterToStorage(charWithDim);
             setIsEditingCharacter(false);
 
             const timeStr = new Date().toLocaleTimeString('vi-VN', {
@@ -615,21 +715,22 @@ export function App() {
             });
             handleIncomingChatMessage({
               id: `welcome-${Date.now()}`,
-              senderId: savedChar.id,
-              senderName: savedChar.name,
-              senderRole: savedChar.role,
-              senderAppearance: savedChar.appearance,
-              content: `Chào mọi người, tôi vừa tạo hình nhân vật và tham gia công sở! Rất vui được làm quen với mọi người! 🎉✨`,
+              senderId: charWithDim.id,
+              senderName: charWithDim.name,
+              senderRole: charWithDim.role,
+              senderAppearance: charWithDim.appearance,
+              content: `Chào mọi người, tôi vừa tạo hình nhân vật và gia nhập Vũ Trụ Đa Chiều! Rất vui được làm quen! 🎉✨`,
               timestamp: timeStr,
               mentions: [],
               isLong: false,
+              dimensionId: currentDimension,
             });
 
             if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
               wsRef.current.send(
                 JSON.stringify({
                   type: 'PLAYER_JOIN',
-                  data: savedChar,
+                  data: charWithDim,
                 })
               );
             }
@@ -637,7 +738,7 @@ export function App() {
         />
       )}
 
-      {/* 8. EXIT / SAVE MODAL */}
+      {/* 9. EXIT / SAVE MODAL */}
       {showExitModal && userCharacter && (
         <ExitModal
           userCharacter={userCharacter}
