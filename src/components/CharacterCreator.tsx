@@ -215,7 +215,7 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
     }
 
     const newChar: Character = {
-      id: initialCharacter?.id || 'player-main',
+      id: initialCharacter?.id || `player-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       name: name.trim(),
       gender,
       role: role.trim() || 'Thành Viên Công Sở',

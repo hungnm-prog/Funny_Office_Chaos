@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import type { Character, CharacterStatus, Seat, ToastItem, ChatMessage, DimensionId } from './types/game';
 import { INITIAL_COLLEAGUES, OFFICE_RANDOM_CHATS } from './constants/colleagues';
 import { DIMENSIONS, MAP_WIDTH, MAP_HEIGHT } from './constants/officeLayout';
@@ -140,12 +140,36 @@ export function App() {
 
           if (type === 'NEW_CHAT') {
             handleIncomingChatMessage(data);
+          } else if (type === 'INIT_STATE') {
+            if (data?.players && Array.isArray(data.players)) {
+              const curUserId = userCharRef.current?.id;
+              const curUserName = userCharRef.current?.name;
+              setColleagues((prev) => {
+                const merged = [...prev];
+                for (const p of data.players) {
+                  if (p.id === curUserId || p.name === curUserName) continue;
+                  if (!merged.some((c) => c.id === p.id || c.name === p.name)) {
+                    merged.push({ ...p, isUser: false });
+                  }
+                }
+                return merged;
+              });
+            }
           } else if (type === 'PLAYER_JOINED') {
+            const curUserId = userCharRef.current?.id;
+            const curUserName = userCharRef.current?.name;
+            if (data.id === curUserId || data.name === curUserName) {
+              return; // Never duplicate the user character
+            }
             setColleagues((prev) => {
-              if (prev.some((c) => c.id === data.id)) return prev;
+              if (prev.some((c) => c.id === data.id || c.name === data.name)) return prev;
               return [...prev, { ...data, isUser: false }];
             });
           } else if (type === 'PLAYER_MOVED') {
+            const curUserId = userCharRef.current?.id;
+            if (data.id === curUserId) {
+              return; // Ignore server echo of our own movement
+            }
             setColleagues((prev) =>
               prev.map((c) =>
                 c.id === data.id
@@ -805,7 +829,13 @@ export function App() {
     [handleIncomingChatMessage]
   );
 
-  const allCharacters = userCharacter ? [userCharacter, ...colleagues] : colleagues;
+  const allCharacters = useMemo(() => {
+    if (!userCharacter) return colleagues;
+    const filteredColleagues = colleagues.filter(
+      (c) => c.id !== userCharacter.id && c.name !== userCharacter.name
+    );
+    return [userCharacter, ...filteredColleagues];
+  }, [userCharacter, colleagues]);
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-slate-950 font-game">

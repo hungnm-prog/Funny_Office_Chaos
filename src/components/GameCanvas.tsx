@@ -414,14 +414,38 @@ export const GameCanvas: React.FC<GameCanvasProps> = React.memo(({
     return map;
   }, [allCharacters]);
 
-  // Filter visible characters by active dimension - memoized
+  // Filter visible characters by active dimension - strictly exactly ONE instance of userCharacter
   const visibleCharacters = useMemo(() => {
-    return allCharacters.filter((char) => {
-      if (char.id === userCharacter.id) return true; // User is always in active dimension
+    const seenIds = new Set<string>();
+    const seenNames = new Set<string>();
+    const list: Character[] = [];
+
+    // 1. User character is ALWAYS first and strictly unique
+    if (userCharacter) {
+      seenIds.add(userCharacter.id);
+      seenNames.add(userCharacter.name.trim().toLowerCase());
+      list.push(userCharacter);
+    }
+
+    // 2. Add other unique characters matching dimension
+    for (const char of allCharacters) {
+      if (!char) continue;
+      const idKey = char.id;
+      const nameKey = char.name?.trim().toLowerCase();
+
+      if (seenIds.has(idKey) || (nameKey && seenNames.has(nameKey))) {
+        continue; // Skip duplicate of user or existing colleague!
+      }
+
       const charDim = char.dimensionId || 'office';
-      return charDim === currentDimension;
-    });
-  }, [allCharacters, userCharacter.id, currentDimension]);
+      if (charDim === currentDimension) {
+        seenIds.add(idKey);
+        if (nameKey) seenNames.add(nameKey);
+        list.push(char);
+      }
+    }
+    return list;
+  }, [allCharacters, userCharacter, currentDimension]);
 
   return (
     <div
