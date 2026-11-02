@@ -150,68 +150,69 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
     }
   };
 
-  // 2. LAYER 3: FRONT HAIR
+  // 2. LAYER 3: FRONT HAIR (100% Solid Continuous Paths - ZERO Gaps, ZERO Exposed Skin Holes)
   const renderFrontHair = () => {
     if (!isFemale) {
       switch (currentStyleKey) {
+        // STYLE 1: SIDEPART 7/3 (Rẽ ngôi 7/3 lãng tử, mái dấu phẩy bồng bềnh liền khối)
         case 'sidepart7_3':
         default:
           return (
             <g fill={hairColor}>
-              <path d="M 14 24 C 13 12 21 5.5 32 5.5 C 43 5.5 51 12 50 24 C 47 20 44 19 42 22 C 39 16 34 15 30 15 C 25 15 20 18 18 23 C 17 20 15 20 14 24 Z" />
-              <path d="M 27 15 Q 37 13.5 46 17.5 C 47 20 43 20.5 39 20 C 33 19 28 17.5 27 15 Z" />
-              <path d="M 26 15 Q 20 16 16 19.5 C 18 21 22 18.5 26 15 Z" />
+              <path d="M 13.5 23 C 12.5 11 21 5 32 5 C 43 5 51.5 11 50.5 23 L 46.5 21 C 44 20 40 19.8 36 19 C 31 18 27.5 16 26.5 15 C 25 17 21 18.5 17 20 C 15.5 20.5 14.5 21.5 13.5 23 Z" />
+              <path d="M 26.5 15 Q 36 14 44 17.5 C 46 19.5 42 20.4 37 20.2 C 32 19.8 28 18 26.5 15 Z" />
               <rect x="15" y="22" width="3.5" height="7" rx="1.5" />
               <rect x="45.5" y="22" width="3.5" height="7" rx="1.5" />
-              <ellipse cx="34" cy="10" rx="8" ry="1.8" fill="#ffffff" opacity="0.28" />
+              <ellipse cx="34" cy="9.5" rx="8" ry="1.8" fill="#ffffff" opacity="0.28" />
             </g>
           );
+
+        // STYLE 2: UNDERCUT (Hai bên fade gọn, đỉnh pompadour vuốt phồng hiện đại)
         case 'undercut':
           return (
             <g fill={hairColor}>
-              <path d="M 15 22 C 14 11 22 4.5 32 4.5 C 42 4.5 50 11 49 22 C 47 18 44 17 41 19 C 38 14 35 14 32 16 C 29 14 26 14 23 19 C 20 17 17 18 15 22 Z" />
-              <path d="M 21 15 Q 32 11 43 15 L 41 18 Q 32 14 23 18 Z" fill="rgba(255,255,255,0.22)" />
-              <rect x="21" y="16.5" width="22" height="3" rx="1" fill={hairColor} />
+              <path d="M 15 22 C 14 11 22 4.5 32 4.5 C 42 4.5 50 11 49 22 L 44 21 C 42 17.5 40 17 36 17 L 24 17 C 21 17 19 18 17 21 Z" />
+              <path d="M 20 17 Q 32 13 44 17 L 42 19 Q 32 15 22 19 Z" fill="rgba(255,255,255,0.22)" />
               <rect x="15.8" y="22" width="2.8" height="6.5" rx="1" opacity="0.85" />
               <rect x="45.4" y="22" width="2.8" height="6.5" rx="1" opacity="0.85" />
               <ellipse cx="32" cy="9" rx="8.5" ry="2" fill="#ffffff" opacity="0.25" />
             </g>
           );
+
+        // STYLE 3: LAYER (Tóc tỉa layer bồng bềnh Hàn Quốc - Liền mạch 1 khối, KHÔNG LỖ HỔNG, KHÔNG RĂNG CƯA THÔ)
         case 'layer':
           return (
             <g fill={hairColor}>
-              <path d="M 13.5 24 C 12.5 12 21 5 32 5 C 43 5 51.5 12 50.5 24 C 48 19 45 18 43 21 C 40 16 36 15 32 18 C 28 15 24 16 21 21 C 19 18 16 19 13.5 24 Z" />
-              <polygon points="17,17 21,20.5 24,17" />
-              <polygon points="23,17 27,20.5 30,17" />
-              <polygon points="29,17 33,20.8 36,17" />
-              <polygon points="35,17 39,20.5 42,17" />
-              <polygon points="41,17 44.5,20 47,17" />
-              <rect x="15" y="23" width="3.2" height="6.5" rx="1.2" />
-              <rect x="45.8" y="23" width="3.2" height="6.5" rx="1.2" />
+              {/* Vòm tóc và mái layer tỉa so le mềm mại thành 1 path khép kín đồng nhất */}
+              <path d="M 13.5 23 C 12.5 11 21 5 32 5 C 43 5 51.5 11 50.5 23 L 46.5 21 C 44 20.4 42.5 20.4 39.5 18.5 C 38 20.6 36 20.6 33 18.6 C 31.5 20.6 29.5 20.6 26.5 18.6 C 25 20.4 23 20.4 20 18.5 C 18 20.4 16.5 20.5 14.5 21 Z" />
+              {/* Lớp tóc tỉa so le tạo chiều sâu bồng bềnh */}
+              <path d="M 17 19.5 Q 21.5 20.6 25 18.6 Q 29.5 20.8 33 18.6 Q 36.5 20.8 40 18.5 Q 43 20.4 46 19.5" stroke="rgba(255,255,255,0.2)" strokeWidth="0.8" fill="none" />
+              <rect x="15" y="22" width="3.2" height="6.5" rx="1.2" />
+              <rect x="45.8" y="22" width="3.2" height="6.5" rx="1.2" />
               <ellipse cx="32" cy="10" rx="9" ry="2.2" fill="#ffffff" opacity="0.25" />
             </g>
           );
+
+        // STYLE 4: SHORT QUIFF (Vuốt dựng năng động trẻ trung)
         case 'short_quiff':
           return (
             <g fill={hairColor}>
-              <path d="M 14.5 23 C 13.5 13 21 3.8 32 3.8 C 41 3.8 48 9 49.5 23 C 47 19 44 18 42 20 C 39 14 35 12 32 12 C 29 12 25 14 22 20 C 20 18 17 19 14.5 23 Z" />
-              {!hasHat && <polygon points="28,13 32,7 36,13" />}
-              {!hasHat && <path d="M 25 14 Q 32 7.5 39 14 L 37 16 Q 32 10 27 16 Z" fill="rgba(255,255,255,0.22)" />}
+              <path d="M 14.5 23 C 13.5 12 21 4 32 4 C 42 4 49.5 12 49.5 23 L 45 21 C 43 18.5 41 18 38 18 C 35 15 34 11 32 6.5 C 30 11 29 15 26 18 C 23 18 20 19 18 21 Z" />
+              <path d="M 26 15 Q 32 8.5 38 15 L 36 17 Q 32 11 28 17 Z" fill="rgba(255,255,255,0.22)" />
               <rect x="15.5" y="22" width="3" height="6.5" rx="1.2" />
               <rect x="45.5" y="22" width="3" height="6.5" rx="1.2" />
               <ellipse cx="32" cy="9.5" rx="7.5" ry="1.8" fill="#ffffff" opacity="0.25" />
             </g>
           );
+
+        // STYLE 5: BUZZ CUT (Đầu đinh cua sắc sảo ôm sát vòm sọ)
         case 'buzz_cut':
           return (
             <g fill={hairColor}>
-              <path d="M 16.5 24 C 16 15 22 9.5 32 9.5 C 42 9.5 48 15 47.5 24 L 46 24 C 45 19 44 17.5 41 17.5 L 23 17.5 C 20 17.5 19 19 18 24 Z" />
-              <rect x="20.5" y="16.5" width="23" height="3" rx="1" />
-              <polygon points="17.5,21 21,17 21,22" />
-              <polygon points="46.5,21 43,17 43,22" />
-              <rect x="16.5" y="23" width="2.8" height="5.5" rx="0.8" opacity="0.9" />
-              <rect x="44.7" y="23" width="2.8" height="5.5" rx="0.8" opacity="0.9" />
-              <ellipse cx="32" cy="13" rx="8.5" ry="1.8" fill="#ffffff" opacity="0.18" />
+              <path d="M 16 23 C 15.5 13 22 8.5 32 8.5 C 42 8.5 48.5 13 48 23 L 44 21 C 42 17.5 40 17 36 17 L 24 17 C 21 17 19 18 17 21 Z" />
+              <rect x="16" y="23" width="2.8" height="5.5" rx="0.8" opacity="0.9" />
+              <rect x="45.2" y="23" width="2.8" height="5.5" rx="0.8" opacity="0.9" />
+              <ellipse cx="32" cy="12.5" rx="8.5" ry="1.8" fill="#ffffff" opacity="0.18" />
             </g>
           );
       }
@@ -221,10 +222,10 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
       case 'female_wavy':
         return (
           <g fill={hairColor}>
-            <path d="M 13 23 C 13 12 21 6 32 6 C 43 6 51 12 51 23 C 47 19 44 19 43 22 C 41 17 37 16 32 19 C 27 16 23 17 21 22 C 20 19 17 19 13 23 Z" />
-            <rect x="27" y="16" width="2" height="3.5" rx="1" opacity="0.8" />
-            <rect x="31" y="16" width="2" height="4" rx="1" opacity="0.8" />
-            <rect x="35" y="16" width="2" height="3.5" rx="1" opacity="0.8" />
+            <path d="M 13 23 C 13 11 21 5.5 32 5.5 C 43 5.5 51 11 51 23 L 47 21 C 44 19 41 18 38 18 C 34 18 33 17 32 17 C 31 17 30 18 26 18 C 23 18 20 19 17 21 Z" />
+            <path d="M 27 17.5 Q 28 19 28 20.3" stroke={hairColor} strokeWidth="1.8" strokeLinecap="round" />
+            <path d="M 32 17.5 L 32 20.5" stroke={hairColor} strokeWidth="2.0" strokeLinecap="round" />
+            <path d="M 37 17.5 Q 36 19 36 20.3" stroke={hairColor} strokeWidth="1.8" strokeLinecap="round" />
             <path d="M 14 22 C 13 32 16 40 14 48 C 17 48 19 40 19 32 C 19 25 17 22 14 22 Z" />
             <path d="M 50 22 C 51 32 48 40 50 48 C 47 48 45 40 45 32 C 45 25 47 22 50 22 Z" />
             <ellipse cx="32" cy="10" rx="9" ry="2" fill="#ffffff" opacity="0.3" />
@@ -234,8 +235,7 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
       case 'long':
         return (
           <g fill={hairColor}>
-            <path d="M 14 23 C 13 12 21 6 32 6 C 43 6 51 12 50 23 C 48 19 44 19 43 22 C 40 18 24 18 21 22 C 20 19 16 19 14 23 Z" />
-            <path d="M 21 16 Q 32 18 43 16 L 43 19.5 Q 32 21 21 19.5 Z" />
+            <path d="M 13.5 23 C 12.5 11 21 5.5 32 5.5 C 43 5.5 51.5 11 50.5 23 L 46 21 C 42 19.5 37 19.2 32 19.2 C 27 19.2 22 19.5 18 21 Z" />
             <rect x="14" y="22" width="4.5" height="24" rx="2" />
             <rect x="45.5" y="22" width="4.5" height="24" rx="2" />
             <ellipse cx="32" cy="10" rx="10" ry="2" fill="#ffffff" opacity="0.3" />
@@ -245,8 +245,8 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
       case 'bob':
         return (
           <g fill={hairColor}>
-            <path d="M 13 24 C 12 12 21 6 32 6 C 43 6 52 12 51 24 C 51 35 48 41 44 41 C 42 34 45 25 43 21 C 38 17 26 17 21 21 C 19 25 22 34 20 41 C 16 41 13 35 13 24 Z" />
-            <path d="M 22 17 Q 28 20 35 18 Q 28 19 22 17 Z" />
+            <path d="M 13 24 C 12 11 21 5.5 32 5.5 C 43 5.5 52 11 51 24 C 51 35 48 41 44 41 C 42 34 45 25 43 21 C 39 18.5 35 18 32 18 C 29 18 25 18.5 21 21 C 19 25 22 34 20 41 C 16 41 13 35 13 24 Z" />
+            <path d="M 22 17 Q 28 19 35 18 Q 28 18.5 22 17 Z" />
             <ellipse cx="32" cy="10" rx="9" ry="2" fill="#ffffff" opacity="0.25" />
           </g>
         );
@@ -254,7 +254,7 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
       case 'ponytail':
         return (
           <g fill={hairColor}>
-            <path d="M 14 23 C 13 13 21 7 32 7 C 43 7 51 13 50 23 C 47 19 44 19 43 22 C 41 18 37 17 32 20 C 27 17 23 18 21 22 C 20 19 17 19 14 23 Z" />
+            <path d="M 14 23 C 13 12 21 6 32 6 C 43 6 51 12 50 23 L 46 21 C 42 19 38 18 32 18 C 26 18 22 19 18 21 Z" />
             <rect x="15" y="22" width="3" height="8" rx="1.5" />
             <rect x="46" y="22" width="3" height="8" rx="1.5" />
             <ellipse cx="32" cy="11" rx="8" ry="2" fill="#ffffff" opacity="0.25" />
@@ -263,7 +263,7 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
       case 'female_bun':
         return (
           <g fill={hairColor}>
-            <path d="M 14 23 C 13 13 21 7 32 7 C 43 7 51 13 50 23 C 47 19 43 19 42 22 C 40 18 24 18 22 22 C 21 19 17 19 14 23 Z" />
+            <path d="M 14 23 C 13 12 21 6 32 6 C 43 6 51 12 50 23 L 46 21 C 42 19 38 18 32 18 C 26 18 22 19 18 21 Z" />
             <path d="M 16 24 Q 14 31 17 36" stroke={hairColor} strokeWidth="1.8" fill="none" strokeLinecap="round" />
             <path d="M 48 24 Q 50 31 47 36" stroke={hairColor} strokeWidth="1.8" fill="none" strokeLinecap="round" />
             <ellipse cx="32" cy="11" rx="8" ry="2" fill="#ffffff" opacity="0.25" />
@@ -272,8 +272,8 @@ export const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
       case 'female_pixie':
         return (
           <g fill={hairColor}>
-            <path d="M 14 23 C 13 12 21 6 32 6 C 43 6 51 12 50 23 C 48 19 44 19 43 22 C 40 16 28 16 20 20 C 19 21 16 19 14 23 Z" />
-            <polygon points="20,17 34,20 36,17" />
+            <path d="M 14 23 C 13 12 21 6 32 6 C 43 6 51 12 50 23 L 46 21 C 43 18.5 39 18 34 18 C 28 18 22 19 18 21 Z" />
+            <path d="M 21 16 Q 32 17.5 42 17.5 L 40 19.5 Q 32 19 22 18 Z" fill="rgba(255,255,255,0.22)" />
             <rect x="15.5" y="22" width="3" height="6" rx="1" />
             <rect x="45.5" y="22" width="3" height="6" rx="1" />
             <ellipse cx="32" cy="10" rx="8" ry="2" fill="#ffffff" opacity="0.25" />
