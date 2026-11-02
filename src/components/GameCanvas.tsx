@@ -38,7 +38,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const [zoom, setZoom] = useState(0.85);
   const [pan, setPan] = useState({ x: -150, y: -80 });
   const [isPanning, setIsPanning] = useState(false);
-  const dragStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
+  const isMouseDownRef = useRef(false);
+  const dragStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0, hasMoved: false });
   const [ripples, setRipples] = useState<ClickRipple[]>([]);
 
   // Smoothly center on character on initial mount or when requested
@@ -95,37 +96,37 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   };
 
   // Mouse Pan & Click to Move
+  // Nhấn giữ chuột và kéo -> di chuyển bản đồ (Pan & Drag)
+  // Nhấp chuột ngắn (< 6px) -> di chuyển nhân vật (Click to Move)
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button === 1 || e.button === 2) {
-      setIsPanning(true);
-      dragStartRef.current = {
-        x: e.clientX,
-        y: e.clientY,
-        panX: pan.x,
-        panY: pan.y,
-      };
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('input') || target.closest('.no-click-move')) {
       return;
     }
 
-    if (e.button === 0) {
-      const target = e.target as HTMLElement;
-      if (target.closest('button') || target.closest('input') || target.closest('.no-click-move')) {
-        return;
-      }
-
-      dragStartRef.current = {
-        x: e.clientX,
-        y: e.clientY,
-        panX: pan.x,
-        panY: pan.y,
-      };
-    }
+    isMouseDownRef.current = true;
+    dragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      panX: pan.x,
+      panY: pan.y,
+      hasMoved: false,
+    };
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (isPanning) {
-      const dx = e.clientX - dragStartRef.current.x;
-      const dy = e.clientY - dragStartRef.current.y;
+    if (!isMouseDownRef.current) return;
+
+    const dx = e.clientX - dragStartRef.current.x;
+    const dy = e.clientY - dragStartRef.current.y;
+    const dist = Math.hypot(dx, dy);
+
+    // Kéo chuột quá 4px sẽ kích hoạt kéo di chuyển góc nhìn bản đồ
+    if (dist > 4) {
+      if (!dragStartRef.current.hasMoved) {
+        dragStartRef.current.hasMoved = true;
+        setIsPanning(true);
+      }
       setPan({
         x: dragStartRef.current.panX + dx,
         y: dragStartRef.current.panY + dy,
@@ -134,19 +135,20 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   };
 
   const handleMouseUp = (e: React.MouseEvent) => {
-    if (isPanning) {
-      setIsPanning(false);
-      return;
-    }
+    if (!isMouseDownRef.current) return;
+    isMouseDownRef.current = false;
 
-    if (e.button === 0) {
+    const wasDragging = dragStartRef.current.hasMoved;
+    setIsPanning(false);
+
+    // Nếu không kéo chuột (chỉ click chuột trái) -> Di chuyển nhân vật
+    if (!wasDragging && e.button === 0) {
       const target = e.target as HTMLElement;
       if (target.closest('button') || target.closest('input') || target.closest('.no-click-move')) {
         return;
       }
 
-      const dist = Math.hypot(e.clientX - dragStartRef.current.x, e.clientY - dragStartRef.current.y);
-      if (dist < 8 && containerRef.current) {
+      if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
         const worldX = (e.clientX - rect.left - pan.x) / zoom;
         const worldY = (e.clientY - rect.top - pan.y) / zoom;
@@ -169,6 +171,81 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     }
   };
 
+  const handleMouseLeave = () => {
+    if (isMouseDownRef.current) {
+      isMouseDownRef.current = false;
+      setIsPanning(false);
+    }
+  };
+
+  // Touch Pan & Tap to Move
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      const target = e.target as HTMLElement;
+      if (target.closest('button') || target.closest('input') || target.closest('.no-click-move')) {
+        return;
+      }
+      const touch = e.touches[0];
+      isMouseDownRef.current = true;
+      dragStartRef.current = {
+        x: touch.clientX,
+        y: touch.clientY,
+        panX: pan.x,
+        panY: pan.y,
+        hasMoved: false,
+      };
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isMouseDownRef.current || e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    const dx = touch.clientX - dragStartRef.current.x;
+    const dy = touch.clientY - dragStartRef.current.y;
+    const dist = Math.hypot(dx, dy);
+
+    if (dist > 5) {
+      if (!dragStartRef.current.hasMoved) {
+        dragStartRef.current.hasMoved = true;
+        setIsPanning(true);
+      }
+      setPan({
+        x: dragStartRef.current.panX + dx,
+        y: dragStartRef.current.panY + dy,
+      });
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!isMouseDownRef.current) return;
+    isMouseDownRef.current = false;
+
+    const wasDragging = dragStartRef.current.hasMoved;
+    setIsPanning(false);
+
+    if (!wasDragging && e.changedTouches.length === 1 && containerRef.current) {
+      const touch = e.changedTouches[0];
+      const rect = containerRef.current.getBoundingClientRect();
+      const worldX = (touch.clientX - rect.left - pan.x) / zoom;
+      const worldY = (touch.clientY - rect.top - pan.y) / zoom;
+
+      const boundedX = Math.max(120, Math.min(MAP_WIDTH - 120, worldX));
+      const boundedY = Math.max(160, Math.min(MAP_HEIGHT - 120, worldY));
+
+      const newRipple: ClickRipple = {
+        id: Date.now() + Math.random(),
+        x: boundedX,
+        y: boundedY,
+      };
+      setRipples((prev) => [...prev, newRipple]);
+      setTimeout(() => {
+        setRipples((prev) => prev.filter((r) => r.id !== newRipple.id));
+      }, 600);
+
+      onMoveUser(boundedX, boundedY);
+    }
+  };
+
   const occupiedSeats: Record<string, string> = {};
   allCharacters.forEach((char) => {
     if (char.isSitting && char.sittingSeatId) {
@@ -183,8 +260,14 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseLeave}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
       onContextMenu={(e) => e.preventDefault()}
-      className="relative w-full h-full overflow-hidden bg-[#090d16] cursor-default select-none"
+      className={`relative w-full h-full overflow-hidden bg-[#090d16] select-none ${
+        isPanning ? 'cursor-grabbing' : 'cursor-grab'
+      }`}
     >
       {/* FLOATING ZOOM CONTROLS */}
       <div className="fixed bottom-24 left-6 z-40 flex items-center gap-1.5 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 shadow-2xl rounded-2xl p-1.5 no-click-move">
@@ -233,7 +316,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       {/* CLICK TO MOVE HINT */}
       <div className="fixed top-20 left-6 z-30 pointer-events-none hidden md:flex items-center gap-2 bg-slate-900/70 backdrop-blur-sm border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-400">
         <MousePointerClick className="w-3.5 h-3.5 text-indigo-400" />
-        <span>Nhấp chuột vào sàn để di chuyển • Cuộn chuột để phóng to/thu nhỏ</span>
+        <span>Nhấp chuột để di chuyển • Nhấn giữ chuột và kéo để di chuyển bản đồ • Cuộn chuột để phóng to/thu nhỏ</span>
       </div>
 
       {/* TRANSFORM CONTAINER FOR THE ENTIRE OFFICE WORLD */}
