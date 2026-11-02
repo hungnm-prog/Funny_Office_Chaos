@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { Character, CharacterAppearance } from '../types/game';
+import type { Character, CharacterAppearance, Gender } from '../types/game';
 import { CharacterAvatar } from './CharacterAvatar';
 import { Sparkles, Dice5, User, Check, Palette, Eye, Shirt } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -13,15 +13,16 @@ interface CharacterCreatorProps {
 
 const HAIR_COLORS = [
   { name: 'Đen Tuyền', color: '#0f172a' },
-  { name: 'Nâu Trầm', color: '#451a03' },
   { name: 'Nâu Hạt Dẻ', color: '#78350f' },
+  { name: 'Nâu Trầm', color: '#451a03' },
+  { name: 'Nâu Trà Sữa', color: '#a16207' },
   { name: 'Vàng Khói', color: '#ca8a04' },
   { name: 'Bạch Kim', color: '#e2e8f0' },
   { name: 'Đỏ Cherry', color: '#e11d48' },
   { name: 'Hồng Pastel', color: '#f43f5e' },
   { name: 'Tím Khói', color: '#9333ea' },
   { name: 'Xanh Navy', color: '#1e40af' },
-  { name: 'Xanh Mint', color: '#059669' },
+  { name: 'Xanh Rêu Mint', color: '#059669' },
 ];
 
 const SKIN_COLORS = [
@@ -30,46 +31,62 @@ const SKIN_COLORS = [
   { name: 'Tự Nhiên', color: '#fed7aa' },
   { name: 'Ấm Áp', color: '#fde047' },
   { name: 'Nâu Rám Nắng', color: '#d97706' },
-  { name: 'Nâu Đồng', color: '#92400e' },
+  { name: 'Nâu Đồng Khỏe Khoắn', color: '#92400e' },
 ];
 
 const OUTFIT_COLORS = [
   { name: 'Xanh Navy', color: '#1e3a8a' },
   { name: 'Xanh Coban', color: '#2563eb' },
-  { name: 'Xanh Lục', color: '#059669' },
-  { name: 'Đỏ Rượu', color: '#b91c1c' },
+  { name: 'Xanh Lục Emerald', color: '#059669' },
+  { name: 'Đỏ Rượu Vang', color: '#b91c1c' },
   { name: 'Cam Năng Động', color: '#ea580c' },
-  { name: 'Tím Thơ Mộng', color: '#7c3aed' },
-  { name: 'Hồng Cá Tính', color: '#db2777' },
-  { name: 'Xám Ghi', color: '#475569' },
+  { name: 'Tím Mộng Mơ', color: '#7c3aed' },
+  { name: 'Hồng Nữ Tính', color: '#db2777' },
+  { name: 'Xám Ghi Thanh Lịch', color: '#475569' },
   { name: 'Đen Sang Trọng', color: '#0f172a' },
   { name: 'Vàng Hoàng Cung', color: '#d97706' },
 ];
 
 const EYE_COLORS = [
-  { name: 'Nâu Đen', color: '#0f172a' },
+  { name: 'Nâu Đen Tự Nhiên', color: '#0f172a' },
   { name: 'Nâu Hổ Phách', color: '#78350f' },
   { name: 'Xanh Sapphire', color: '#1d4ed8' },
   { name: 'Xanh Ngọc Lục Bảo', color: '#047857' },
   { name: 'Tím Amethyst', color: '#7e22ce' },
-  { name: 'Đỏ Ruby', color: '#be123c' },
+  { name: 'Đỏ Ruby Quý Phái', color: '#be123c' },
 ];
 
-const HAIR_STYLES = [
-  { id: 'short', label: 'Tóc Ngắn Nam Tính' },
-  { id: 'ponytail', label: 'Tóc Đuôi Ngựa' },
-  { id: 'bob', label: 'Tóc Bob Cá Tính' },
-  { id: 'long', label: 'Tóc Dài Thướt Tha' },
-  { id: 'curly', label: 'Tóc Xoăn Bồng Bềnh' },
-  { id: 'spiky', label: 'Tóc Vuốt Nhọn' },
-] as const;
+// Kiểu tóc nam bao phủ kín vòm đầu cực đẹp
+const MALE_HAIR_STYLES = [
+  { id: 'male_sidepart', label: '7/3 Rẽ Ngôi Hàn Quốc', desc: 'Mái dấu phẩy lãng tử, phồng dày ôm trọn đỉnh đầu' },
+  { id: 'male_layer', label: 'Tóc Layer Two-Block', desc: 'Mái bay phủ trán, bồng bềnh chuẩn soái ca' },
+  { id: 'male_quiff', label: 'Quiff Vuốt Phồng', desc: 'Lịch lãm sang trọng, vuốt phồng cao cấp' },
+  { id: 'male_spiky', label: 'Spiky Cá Tính', desc: 'Gai nhọn textured hiện đại, nam tính mạnh mẽ' },
+];
 
-const OUTFIT_STYLES = [
-  { id: 'suit', label: 'Vest Công Sở' },
-  { id: 'shirt', label: 'Sơ Mi Thanh Lịch' },
+// Kiểu tóc nữ bao phủ kín đầu óng ả
+const FEMALE_HAIR_STYLES = [
+  { id: 'female_wavy', label: 'Tóc Dài Uốn Sóng Nước', desc: 'Bồng bềnh quyến rũ, mái thưa Hàn Quốc ngọt ngào' },
+  { id: 'female_straight', label: 'Tóc Dài Suôn Mượt', desc: 'Mái bằng hime, suôn dài óng ả qua vai' },
+  { id: 'female_bob', label: 'Tóc Bob Cúp Ngang Vai', desc: 'Uốn cụp ôm lấy gương mặt thanh tú, đáng yêu' },
+  { id: 'female_ponytail', label: 'Tóc Đuôi Ngựa Buộc Cao', desc: 'Năng động trẻ trung, lọn tóc bồng bềnh' },
+  { id: 'female_bun', label: 'Tóc Búi Củ Tỏi Tiểu Thư', desc: 'Búi cao đính nơ, lọn tóc mai buông lơi tự nhiên' },
+  { id: 'female_pixie', label: 'Tóc Tém Pixie Sành Điệu', desc: 'Cá tính thời thượng, mái xéo che trán' },
+];
+
+const MALE_OUTFIT_STYLES = [
+  { id: 'suit', label: 'Vest Nam Công Sở' },
+  { id: 'shirt', label: 'Sơ Mi Lịch Lãm' },
   { id: 'casual', label: 'Áo Phông Năng Động' },
   { id: 'hoodie', label: 'Hoodie Trẻ Trung' },
-  { id: 'dress', label: 'Váy Công Sở' },
+] as const;
+
+const FEMALE_OUTFIT_STYLES = [
+  { id: 'dress', label: 'Váy Công Sở Cao Cấp' },
+  { id: 'suit', label: 'Vest Nữ Quyền Lực' },
+  { id: 'shirt', label: 'Sơ Mi Điệu Đà' },
+  { id: 'casual', label: 'Áo Phông Nữ Tính' },
+  { id: 'hoodie', label: 'Hoodie Dễ Thương' },
 ] as const;
 
 const ACCESSORIES = [
@@ -79,9 +96,14 @@ const ACCESSORIES = [
   { id: 'badge', label: 'Thẻ Nhân Viên' },
 ] as const;
 
-const SAMPLE_NAMES = [
-  'Tuấn Kiệt', 'Hương Giang', 'Minh Đăng', 'Khánh Linh', 'Quang Huy',
-  'Ngọc Ánh', 'Việt Hoàng', 'Phương Thảo', 'Thế Anh', 'Thanh Trúc'
+const MALE_NAMES = [
+  'Minh Quân', 'Tuấn Kiệt', 'Hoàng Nam', 'Quốc Bảo', 'Minh Tuấn',
+  'Đức Anh', 'Việt Hoàng', 'Quang Huy', 'Thế Anh', 'Thanh Tùng'
+];
+
+const FEMALE_NAMES = [
+  'Thùy Linh', 'Hương Giang', 'Mai Trang', 'Khánh Linh', 'Hải Yến',
+  'Bảo Ngọc', 'Kim Ngân', 'Phương Thảo', 'Thanh Trúc', 'Ngọc Ánh'
 ];
 
 const SAMPLE_ROLES = [
@@ -95,12 +117,17 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
   isEditing = false,
   onCancel,
 }) => {
-  const [name, setName] = useState(initialCharacter?.name || 'Nguyễn Minh Quân');
+  const [gender, setGender] = useState<Gender>(initialCharacter?.appearance?.gender || 'male');
+  const [name, setName] = useState(
+    initialCharacter?.name || (gender === 'male' ? 'Nguyễn Minh Quân' : 'Nguyễn Thùy Linh')
+  );
   const [role, setRole] = useState(initialCharacter?.role || 'Fullstack Developer');
+
   const [appearance, setAppearance] = useState<CharacterAppearance>(
     initialCharacter?.appearance || {
+      gender: 'male',
       hairColor: '#0f172a',
-      hairStyle: 'short',
+      hairStyle: 'male_sidepart',
       skinColor: '#fed7aa',
       outfitColor: '#2563eb',
       outfitStyle: 'suit',
@@ -109,27 +136,54 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
     }
   );
 
-  const [activeTab, setActiveTab] = useState<'hair' | 'skin' | 'outfit' | 'eyes' | 'style'>('hair');
+  const [activeTab, setActiveTab] = useState<'gender' | 'hair' | 'skin' | 'outfit' | 'eyes' | 'style'>('gender');
+
+  // Handle switching gender
+  const handleGenderChange = (newGender: Gender) => {
+    setGender(newGender);
+    const newHairStyle = newGender === 'male' ? 'male_sidepart' : 'female_wavy';
+    const newOutfitStyle = newGender === 'male' ? 'suit' : 'dress';
+    const newOutfitColor = newGender === 'male' ? '#2563eb' : '#db2777';
+
+    // Suggest appropriate default name if user hasn't typed a custom one
+    if (MALE_NAMES.includes(name) || FEMALE_NAMES.includes(name) || name === 'Nguyễn Minh Quân' || name === 'Nguyễn Thùy Linh') {
+      setName(newGender === 'male' ? 'Nguyễn Minh Quân' : 'Nguyễn Thùy Linh');
+    }
+
+    setAppearance((prev) => ({
+      ...prev,
+      gender: newGender,
+      hairStyle: newHairStyle,
+      outfitStyle: newOutfitStyle,
+      outfitColor: newOutfitColor,
+    }));
+  };
 
   const handleRandomize = () => {
-    const randomName = SAMPLE_NAMES[Math.floor(Math.random() * SAMPLE_NAMES.length)];
+    const isMale = gender === 'male';
+    const nameList = isMale ? MALE_NAMES : FEMALE_NAMES;
+    const hairList = isMale ? MALE_HAIR_STYLES : FEMALE_HAIR_STYLES;
+    const outfitList = isMale ? MALE_OUTFIT_STYLES : FEMALE_OUTFIT_STYLES;
+
+    const randomName = nameList[Math.floor(Math.random() * nameList.length)];
     const randomRole = SAMPLE_ROLES[Math.floor(Math.random() * SAMPLE_ROLES.length)];
     const randomHair = HAIR_COLORS[Math.floor(Math.random() * HAIR_COLORS.length)].color;
     const randomSkin = SKIN_COLORS[Math.floor(Math.random() * SKIN_COLORS.length)].color;
     const randomOutfit = OUTFIT_COLORS[Math.floor(Math.random() * OUTFIT_COLORS.length)].color;
     const randomEye = EYE_COLORS[Math.floor(Math.random() * EYE_COLORS.length)].color;
-    const randomHairStyle = HAIR_STYLES[Math.floor(Math.random() * HAIR_STYLES.length)].id;
-    const randomOutfitStyle = OUTFIT_STYLES[Math.floor(Math.random() * OUTFIT_STYLES.length)].id;
+    const randomHairStyle = hairList[Math.floor(Math.random() * hairList.length)].id;
+    const randomOutfitStyle = outfitList[Math.floor(Math.random() * outfitList.length)].id;
     const randomAccessory = ACCESSORIES[Math.floor(Math.random() * ACCESSORIES.length)].id;
 
     setName(randomName);
     setRole(randomRole);
     setAppearance({
+      gender,
       hairColor: randomHair,
       hairStyle: randomHairStyle,
       skinColor: randomSkin,
       outfitColor: randomOutfit,
-      outfitStyle: randomOutfitStyle,
+      outfitStyle: randomOutfitStyle as any,
       eyeColor: randomEye,
       accessory: randomAccessory,
     });
@@ -152,8 +206,12 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
     const newChar: Character = {
       id: initialCharacter?.id || 'player-main',
       name: name.trim(),
-      role: role.trim() || 'Nhân Viên Mới',
-      appearance,
+      gender,
+      role: role.trim() || 'Thành Viên Công Sở',
+      appearance: {
+        ...appearance,
+        gender,
+      },
       status: 'online',
       position: initialCharacter?.position || { x: 550, y: 560 },
       direction: 'down',
@@ -167,21 +225,24 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
     onSave(newChar);
   };
 
+  const currentHairStyles = gender === 'male' ? MALE_HAIR_STYLES : FEMALE_HAIR_STYLES;
+  const currentOutfitStyles = gender === 'male' ? MALE_OUTFIT_STYLES : FEMALE_OUTFIT_STYLES;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto">
       <div className="relative w-full max-w-4xl bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="relative px-8 py-6 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between">
+        <div className="relative px-8 py-5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-2xl bg-gradient-to-tr from-indigo-600 to-pink-500 text-white shadow-lg shadow-indigo-500/20">
               <Sparkles className="w-6 h-6" />
             </div>
             <div>
               <h2 className="text-2xl font-black text-white tracking-wide">
-                {isEditing ? 'Chỉnh Sửa Tạo Hình Nhân Vật' : 'Tạo Hình Nhân Vật Công Sở Của Bạn'}
+                {isEditing ? 'Chỉnh Sửa Nhân Vật' : 'Tạo Hình Nhân Vật Công Sở'}
               </h2>
-              <p className="text-sm text-slate-400">
-                Tự do thiết kế màu tóc, màu da, bộ đồ và đôi mắt mang đậm dấu ấn riêng
+              <p className="text-xs text-slate-400">
+                Lựa chọn giới tính Nam / Nữ và kiểu tóc bao phủ đầu bồng bềnh theo phong cách riêng
               </p>
             </div>
           </div>
@@ -201,21 +262,26 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
           {/* Left Column: Live 2D Avatar Showcase */}
           <div className="md:col-span-4 flex flex-col items-center justify-between p-6 rounded-2xl bg-gradient-to-b from-slate-800/50 to-slate-900/80 border border-slate-700/60 shadow-inner">
             <div className="text-center w-full">
-              <span className="text-xs font-bold uppercase tracking-wider text-indigo-400">
-                Xem Trước Trực Tiếp
-              </span>
-              <div className="my-6 flex items-center justify-center p-6 rounded-3xl bg-slate-950/60 border border-slate-800 shadow-2xl relative overflow-hidden group">
+              {/* Gender badge indicator */}
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border mb-2 bg-slate-900/80 shadow">
+                <span className={gender === 'male' ? 'text-blue-400' : 'text-pink-400'}>
+                  {gender === 'male' ? '♂️ Giới tính: Nam' : '♀️ Giới tính: Nữ'}
+                </span>
+              </div>
+
+              {/* Avatar Preview Dome */}
+              <div className="my-3 flex items-center justify-center p-6 rounded-3xl bg-slate-950/60 border border-slate-800 shadow-2xl relative overflow-hidden group">
                 <div
-                  className="absolute inset-0 opacity-20 blur-2xl rounded-full transition-all duration-300"
+                  className="absolute inset-0 opacity-25 blur-2xl rounded-full transition-all duration-300"
                   style={{ backgroundColor: appearance.outfitColor }}
                 />
                 <div className="relative transform scale-125 transition-transform duration-300 group-hover:scale-135">
-                  <CharacterAvatar appearance={appearance} size={110} direction="down" />
+                  <CharacterAvatar appearance={{ ...appearance, gender }} size={110} direction="down" />
                 </div>
               </div>
 
               {/* Name & Role Preview Tag */}
-              <div className="bg-slate-900/90 border border-slate-700 rounded-xl p-3 shadow-md">
+              <div className="bg-slate-900/90 border border-slate-700 rounded-xl p-2.5 shadow-md">
                 <div className="flex items-center justify-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
                   <span className="font-bold text-white text-base truncate max-w-[180px]">
@@ -267,13 +333,14 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
           {/* Right Column: Customization Controls (Tabs & Colors) */}
           <div className="md:col-span-8 flex flex-col justify-between">
             {/* Customization Category Tabs */}
-            <div className="flex flex-wrap gap-2 border-b border-slate-800 pb-3 mb-6">
+            <div className="flex flex-wrap gap-2 border-b border-slate-800 pb-3 mb-5">
               {[
-                { id: 'hair', label: 'Màu & Kiểu Tóc', icon: Palette },
-                { id: 'skin', label: 'Màu Da', icon: User },
-                { id: 'outfit', label: 'Bộ Đồ & Trang Phục', icon: Shirt },
-                { id: 'eyes', label: 'Màu Đôi Mắt', icon: Eye },
-                { id: 'style', label: 'Phụ Kiện', icon: Sparkles },
+                { id: 'gender', label: '1. Giới Tính', icon: User },
+                { id: 'hair', label: '2. Tóc & Màu Tóc', icon: Palette },
+                { id: 'skin', label: '3. Màu Da', icon: User },
+                { id: 'outfit', label: '4. Bộ Đồ', icon: Shirt },
+                { id: 'eyes', label: '5. Đôi Mắt', icon: Eye },
+                { id: 'style', label: '6. Phụ Kiện', icon: Sparkles },
               ].map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -282,13 +349,13 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
                     key={tab.id}
                     type="button"
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
                       isActive
                         ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                         : 'bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-700/80'
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon className="w-3.5 h-3.5" />
                     {tab.label}
                   </button>
                 );
@@ -296,24 +363,128 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
             </div>
 
             {/* Tab Panels */}
-            <div className="min-h-[260px]">
-              {/* TAB 1: HAIR */}
-              {activeTab === 'hair' && (
+            <div className="min-h-[270px]">
+              {/* TAB: GENDER SELECTION */}
+              {activeTab === 'gender' && (
                 <div className="space-y-6">
                   <div>
-                    <h4 className="text-sm font-bold text-slate-300 mb-3 flex items-center justify-between">
-                      <span>Chọn Màu Sắc Tóc</span>
+                    <h4 className="text-sm font-bold text-white mb-2">
+                      Chọn Giới Tính Cho Nhân Vật
+                    </h4>
+                    <p className="text-xs text-slate-400 mb-4">
+                      Giới tính sẽ quyết định bộ sưu tập kiểu tóc bao phủ đầu, tỉ lệ vóc dáng và trang phục phù hợp nhất.
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Male Option */}
+                      <button
+                        type="button"
+                        onClick={() => handleGenderChange('male')}
+                        className={`p-5 rounded-2xl border-2 transition-all flex flex-col items-center text-center cursor-pointer ${
+                          gender === 'male'
+                            ? 'bg-blue-950/60 border-blue-500 shadow-xl shadow-blue-500/20 scale-[1.02]'
+                            : 'bg-slate-900 border-slate-800 hover:border-slate-700 opacity-80 hover:opacity-100'
+                        }`}
+                      >
+                        <span className="text-4xl mb-2">👨‍💼</span>
+                        <div className="text-base font-black text-white flex items-center gap-1.5">
+                          <span>Nhân Vật Nam</span>
+                          <span className="text-blue-400 text-sm">♂️</span>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-1">
+                          Tóc Side-part, Layer Hàn Quốc, Vest nam lịch lãm, phong độ
+                        </p>
+                        {gender === 'male' && (
+                          <span className="mt-3 px-3 py-0.5 rounded-full bg-blue-600 text-white text-[11px] font-bold flex items-center gap-1">
+                            <Check className="w-3 h-3" /> Đã Chọn Nam
+                          </span>
+                        )}
+                      </button>
+
+                      {/* Female Option */}
+                      <button
+                        type="button"
+                        onClick={() => handleGenderChange('female')}
+                        className={`p-5 rounded-2xl border-2 transition-all flex flex-col items-center text-center cursor-pointer ${
+                          gender === 'female'
+                            ? 'bg-pink-950/60 border-pink-500 shadow-xl shadow-pink-500/20 scale-[1.02]'
+                            : 'bg-slate-900 border-slate-800 hover:border-slate-700 opacity-80 hover:opacity-100'
+                        }`}
+                      >
+                        <span className="text-4xl mb-2">👩‍💼</span>
+                        <div className="text-base font-black text-white flex items-center gap-1.5">
+                          <span>Nhân Vật Nữ</span>
+                          <span className="text-pink-400 text-sm">♀️</span>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-1">
+                          Tóc dài uốn sóng, suôn mượt, bob cúp, lông mi cong, váy duyên dáng
+                        </p>
+                        {gender === 'female' && (
+                          <span className="mt-3 px-3 py-0.5 rounded-full bg-pink-600 text-white text-[11px] font-bold flex items-center gap-1">
+                            <Check className="w-3 h-3" /> Đã Chọn Nữ
+                          </span>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-slate-900/80 rounded-xl border border-slate-800 text-xs text-indigo-300 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
+                    <span>Sau khi chọn giới tính, chuyển sang tab <strong>Tóc & Màu Tóc</strong> để chọn các kiểu tóc thời thượng nhất!</span>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: HAIR & HAIR COLOR */}
+              {activeTab === 'hair' && (
+                <div className="space-y-5">
+                  {/* Hair Style Options */}
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-200 mb-2.5 flex items-center justify-between">
+                      <span>Kiểu Tóc Bao Phủ Đầu ({gender === 'male' ? 'Bộ Sưu Tập Nam' : 'Bộ Sưu Tập Nữ'})</span>
+                      <span className="text-xs text-indigo-400 font-semibold">Tóc bao phủ kín đầu thời thượng</span>
+                    </h4>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {currentHairStyles.map((style) => {
+                        const isSelected = appearance.hairStyle === style.id;
+                        return (
+                          <button
+                            key={style.id}
+                            type="button"
+                            onClick={() => setAppearance({ ...appearance, hairStyle: style.id })}
+                            className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-indigo-950/90 border-indigo-500 text-white shadow-md'
+                                : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-xs text-white">{style.label}</span>
+                              {isSelected && <Check className="w-4 h-4 text-indigo-400" />}
+                            </div>
+                            <p className="text-[10px] text-slate-400 mt-0.5">{style.desc}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Hair Color Palette */}
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-200 mb-2 flex items-center justify-between">
+                      <span>Màu Sắc Của Tóc</span>
                       <span className="text-xs text-indigo-400 font-mono">
                         {HAIR_COLORS.find((h) => h.color === appearance.hairColor)?.name || 'Tùy chỉnh'}
                       </span>
                     </h4>
-                    <div className="grid grid-cols-5 sm:grid-cols-10 gap-3">
+                    <div className="grid grid-cols-6 sm:grid-cols-11 gap-2">
                       {HAIR_COLORS.map((item) => (
                         <button
                           key={item.color}
                           type="button"
                           onClick={() => setAppearance({ ...appearance, hairColor: item.color })}
-                          className={`relative h-11 rounded-xl transition-all transform hover:scale-110 flex items-center justify-center border-2 ${
+                          className={`relative h-10 rounded-xl transition-all transform hover:scale-110 flex items-center justify-center border-2 ${
                             appearance.hairColor === item.color
                               ? 'border-white scale-105 shadow-lg shadow-indigo-500/30'
                               : 'border-transparent'
@@ -328,34 +499,14 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
                       ))}
                     </div>
                   </div>
-
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-300 mb-3">Chọn Kiểu Tóc</h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                      {HAIR_STYLES.map((style) => (
-                        <button
-                          key={style.id}
-                          type="button"
-                          onClick={() => setAppearance({ ...appearance, hairStyle: style.id })}
-                          className={`px-3 py-2.5 rounded-xl border text-xs font-semibold transition-all text-left ${
-                            appearance.hairStyle === style.id
-                              ? 'bg-indigo-950/80 border-indigo-500 text-indigo-300 shadow-md'
-                              : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
-                          }`}
-                        >
-                          {style.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
                 </div>
               )}
 
-              {/* TAB 2: SKIN */}
+              {/* TAB: SKIN */}
               {activeTab === 'skin' && (
                 <div className="space-y-6">
                   <div>
-                    <h4 className="text-sm font-bold text-slate-300 mb-3 flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-slate-200 mb-3 flex items-center justify-between">
                       <span>Chọn Màu Sắc Da</span>
                       <span className="text-xs text-indigo-400 font-mono">
                         {SKIN_COLORS.find((s) => s.color === appearance.skinColor)?.name}
@@ -382,28 +533,28 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
                     </div>
                   </div>
                   <p className="text-xs text-slate-400 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
-                    💡 Màu da sẽ tự động đồng bộ trên toàn bộ khuôn mặt, cổ và bàn tay của nhân vật trong mọi tư thế di chuyển, làm việc và giải trí.
+                    💡 Màu da sẽ đồng bộ tự nhiên trên toàn bộ khuôn mặt, cổ và bàn tay của nhân vật khi di chuyển, làm việc, câu cá và vui chơi.
                   </p>
                 </div>
               )}
 
-              {/* TAB 3: OUTFIT */}
+              {/* TAB: OUTFIT */}
               {activeTab === 'outfit' && (
-                <div className="space-y-6">
+                <div className="space-y-5">
                   <div>
-                    <h4 className="text-sm font-bold text-slate-300 mb-3 flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-slate-200 mb-2 flex items-center justify-between">
                       <span>Chọn Màu Sắc Bộ Đồ</span>
                       <span className="text-xs text-indigo-400 font-mono">
                         {OUTFIT_COLORS.find((o) => o.color === appearance.outfitColor)?.name}
                       </span>
                     </h4>
-                    <div className="grid grid-cols-5 sm:grid-cols-10 gap-3">
+                    <div className="grid grid-cols-5 sm:grid-cols-10 gap-2.5">
                       {OUTFIT_COLORS.map((item) => (
                         <button
                           key={item.color}
                           type="button"
                           onClick={() => setAppearance({ ...appearance, outfitColor: item.color })}
-                          className={`relative h-11 rounded-xl transition-all transform hover:scale-110 flex items-center justify-center border-2 ${
+                          className={`relative h-10 rounded-xl transition-all transform hover:scale-110 flex items-center justify-center border-2 ${
                             appearance.outfitColor === item.color
                               ? 'border-white scale-105 shadow-lg shadow-indigo-500/30'
                               : 'border-transparent'
@@ -420,13 +571,13 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
                   </div>
 
                   <div>
-                    <h4 className="text-sm font-bold text-slate-300 mb-3">Kiểu Trang Phục</h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                      {OUTFIT_STYLES.map((style) => (
+                    <h4 className="text-sm font-bold text-slate-200 mb-2.5">Kiểu Dáng Trang Phục</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {currentOutfitStyles.map((style) => (
                         <button
                           key={style.id}
                           type="button"
-                          onClick={() => setAppearance({ ...appearance, outfitStyle: style.id })}
+                          onClick={() => setAppearance({ ...appearance, outfitStyle: style.id as any })}
                           className={`px-3 py-2.5 rounded-xl border text-xs font-semibold transition-all text-left ${
                             appearance.outfitStyle === style.id
                               ? 'bg-indigo-950/80 border-indigo-500 text-indigo-300 shadow-md'
@@ -441,11 +592,11 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
                 </div>
               )}
 
-              {/* TAB 4: EYES */}
+              {/* TAB: EYES */}
               {activeTab === 'eyes' && (
                 <div className="space-y-6">
                   <div>
-                    <h4 className="text-sm font-bold text-slate-300 mb-3 flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-slate-200 mb-3 flex items-center justify-between">
                       <span>Chọn Màu Sắc Đôi Mắt</span>
                       <span className="text-xs text-indigo-400 font-mono">
                         {EYE_COLORS.find((e) => e.color === appearance.eyeColor)?.name}
@@ -472,15 +623,15 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
                     </div>
                   </div>
                   <p className="text-xs text-slate-400 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
-                    ✨ Màu mắt thể hiện cá tính riêng biệt của nhân vật và sẽ lấp lánh khi nhân vật trò chuyện trong công sở!
+                    ✨ Nhân vật Nữ sẽ có thêm hàng mi cong duyên dáng và đôi má ửng hồng. Nhân vật Nam có chân mày nam tính và ánh mắt kiên định!
                   </p>
                 </div>
               )}
 
-              {/* TAB 5: ACCESSORIES */}
+              {/* TAB: ACCESSORIES */}
               {activeTab === 'style' && (
                 <div className="space-y-6">
-                  <h4 className="text-sm font-bold text-slate-300 mb-3">Phụ Kiện Đi Kèm</h4>
+                  <h4 className="text-sm font-bold text-slate-200 mb-3">Phụ Kiện Đi Kèm</h4>
                   <div className="grid grid-cols-2 gap-3">
                     {ACCESSORIES.map((acc) => (
                       <button
@@ -505,7 +656,7 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({
             </div>
 
             {/* Bottom Actions */}
-            <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-800 mt-6">
+            <div className="flex items-center justify-end gap-3 pt-5 border-t border-slate-800 mt-4">
               {isEditing && onCancel && (
                 <button
                   type="button"

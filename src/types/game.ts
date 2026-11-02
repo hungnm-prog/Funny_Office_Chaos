@@ -1,8 +1,10 @@
 export type CharacterStatus = 'online' | 'offline' | 'busy';
+export type Gender = 'male' | 'female';
 
 export interface CharacterAppearance {
+  gender: Gender;
   hairColor: string;
-  hairStyle: 'short' | 'long' | 'curly' | 'spiky' | 'bob' | 'ponytail';
+  hairStyle: string;
   skinColor: string;
   outfitColor: string;
   outfitStyle: 'suit' | 'hoodie' | 'shirt' | 'casual' | 'dress';
@@ -13,6 +15,7 @@ export interface CharacterAppearance {
 export interface Character {
   id: string;
   name: string;
+  gender?: Gender;
   role: string;
   appearance: CharacterAppearance;
   status: CharacterStatus;
@@ -34,7 +37,7 @@ export interface Seat {
   x: number;
   y: number;
   type: 'desk' | 'dining' | 'cinema' | 'card' | 'gaming' | 'fishing';
-  occupiedBy?: string; // Character ID
+  occupiedBy?: string;
   direction: 'up' | 'down' | 'left' | 'right';
 }
 
@@ -56,7 +59,7 @@ export interface DiningTable {
   tableNumber: number;
   x: number;
   y: number;
-  seats: Seat[]; // 8 seats per table
+  seats: Seat[];
 }
 
 export interface RecreationArea {

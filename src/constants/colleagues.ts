@@ -4,10 +4,12 @@ export const INITIAL_COLLEAGUES: Character[] = [
   {
     id: 'bot-1',
     name: 'Hoàng Nam',
+    gender: 'male',
     role: 'Tech Lead',
     appearance: {
+      gender: 'male',
       hairColor: '#1e293b',
-      hairStyle: 'short',
+      hairStyle: 'male_sidepart',
       skinColor: '#fde047',
       outfitColor: '#2563eb',
       outfitStyle: 'suit',
@@ -28,10 +30,12 @@ export const INITIAL_COLLEAGUES: Character[] = [
   {
     id: 'bot-2',
     name: 'Thùy Linh',
+    gender: 'female',
     role: 'UI/UX Designer',
     appearance: {
+      gender: 'female',
       hairColor: '#e11d48',
-      hairStyle: 'ponytail',
+      hairStyle: 'female_wavy',
       skinColor: '#fed7aa',
       outfitColor: '#db2777',
       outfitStyle: 'dress',
@@ -52,10 +56,12 @@ export const INITIAL_COLLEAGUES: Character[] = [
   {
     id: 'bot-3',
     name: 'Quốc Bảo',
+    gender: 'male',
     role: 'Product Manager',
     appearance: {
+      gender: 'male',
       hairColor: '#451a03',
-      hairStyle: 'curly',
+      hairStyle: 'male_quiff',
       skinColor: '#fde047',
       outfitColor: '#059669',
       outfitStyle: 'shirt',
@@ -76,10 +82,12 @@ export const INITIAL_COLLEAGUES: Character[] = [
   {
     id: 'bot-4',
     name: 'Mai Trang',
+    gender: 'female',
     role: 'HR Manager',
     appearance: {
+      gender: 'female',
       hairColor: '#78350f',
-      hairStyle: 'bob',
+      hairStyle: 'female_bob',
       skinColor: '#ffedd5',
       outfitColor: '#7c3aed',
       outfitStyle: 'suit',
@@ -100,10 +108,12 @@ export const INITIAL_COLLEAGUES: Character[] = [
   {
     id: 'bot-5',
     name: 'Minh Tuấn',
+    gender: 'male',
     role: 'Senior Backend Dev',
     appearance: {
+      gender: 'male',
       hairColor: '#0f172a',
-      hairStyle: 'spiky',
+      hairStyle: 'male_layer',
       skinColor: '#fed7aa',
       outfitColor: '#ea580c',
       outfitStyle: 'hoodie',
@@ -124,10 +134,12 @@ export const INITIAL_COLLEAGUES: Character[] = [
   {
     id: 'bot-6',
     name: 'Hải Yến',
+    gender: 'female',
     role: 'QA Engineer',
     appearance: {
+      gender: 'female',
       hairColor: '#c026d3',
-      hairStyle: 'long',
+      hairStyle: 'female_straight',
       skinColor: '#ffedd5',
       outfitColor: '#0284c7',
       outfitStyle: 'casual',
@@ -148,10 +160,12 @@ export const INITIAL_COLLEAGUES: Character[] = [
   {
     id: 'bot-7',
     name: 'Đức Anh',
+    gender: 'male',
     role: 'DevOps / Cloud',
     appearance: {
+      gender: 'male',
       hairColor: '#334155',
-      hairStyle: 'short',
+      hairStyle: 'male_sidepart',
       skinColor: '#fde047',
       outfitColor: '#16a34a',
       outfitStyle: 'casual',
@@ -172,10 +186,12 @@ export const INITIAL_COLLEAGUES: Character[] = [
   {
     id: 'bot-8',
     name: 'Bảo Ngọc',
+    gender: 'female',
     role: 'Marketing Lead',
     appearance: {
+      gender: 'female',
       hairColor: '#b45309',
-      hairStyle: 'curly',
+      hairStyle: 'female_ponytail',
       skinColor: '#fed7aa',
       outfitColor: '#e11d48',
       outfitStyle: 'dress',
@@ -196,10 +212,12 @@ export const INITIAL_COLLEAGUES: Character[] = [
   {
     id: 'bot-9',
     name: 'Kim Ngân',
+    gender: 'female',
     role: 'Scrum Master',
     appearance: {
+      gender: 'female',
       hairColor: '#4f46e5',
-      hairStyle: 'ponytail',
+      hairStyle: 'female_bun',
       skinColor: '#ffedd5',
       outfitColor: '#9333ea',
       outfitStyle: 'shirt',
@@ -220,10 +238,12 @@ export const INITIAL_COLLEAGUES: Character[] = [
   {
     id: 'bot-10',
     name: 'Thanh Tùng',
+    gender: 'male',
     role: 'Frontend Dev',
     appearance: {
+      gender: 'male',
       hairColor: '#059669',
-      hairStyle: 'spiky',
+      hairStyle: 'male_spiky',
       skinColor: '#fde047',
       outfitColor: '#ca8a04',
       outfitStyle: 'hoodie',
